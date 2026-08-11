@@ -32,10 +32,10 @@ EOF
 
 cat > "$HOME/.config/systemd/user/sud-weekly-fns.timer" <<'EOF'
 [Unit]
-Description=Run SUD weekly FNS notification every Sunday night
+Description=Run SUD weekly FNS notification every Monday at 00:30
 
 [Timer]
-OnCalendar=Sun 03:00
+OnCalendar=Mon 00:30
 Persistent=true
 
 [Install]

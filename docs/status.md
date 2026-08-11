@@ -180,8 +180,8 @@ Inline-экраны:
 - файл: `weekly_fns_notify.py`
 - установка: `./scripts/install_weekly_fns_timer.sh`
 - workflow: `.github/workflows/weekly-fns.yml`
-- расписание: воскресенье ночью
-- чат: `SUD_WEEKLY_CHAT_ID` в `~/.config/sud/max-bot.env`
+- расписание: понедельник 00:30
+- чат: `/weekly_here` или `SUD_WEEKLY_CHAT_ID` в `~/.config/sud/max-bot.env`
 
 Правило меню: бот хранит ID последнего меню и редактирует его через MAX
 `PUT /messages`, поэтому меню не должно дублироваться в чате. Если MAX не

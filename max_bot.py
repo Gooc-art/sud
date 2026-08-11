@@ -387,7 +387,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "") ->
             show_menu(target, f"Последняя задача: {job.status}. Суд: {court_name(job.court)}. Записей: {job.rows}. Ошибка: {job.error or '-'}", [[("🔄 Обновить статус", "status")], [("🏠 Главное меню", "main")]])
     elif action == "/weekly_here":
         if save_weekly_chat(target):
-            show_menu(target, "Этот чат сохранен для воскресных уведомлений по ФНС.", main_buttons())
+            show_menu(target, "Этот чат сохранен для еженедельных уведомлений по ФНС.", main_buttons())
         else:
             show_menu(target, "Команду нужно отправить в групповом чате.", main_buttons())
     elif action in {"cancel", "/cancel"}:

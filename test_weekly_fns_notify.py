@@ -32,6 +32,24 @@ class WeeklyFnsNotifyTest(unittest.TestCase):
             finally:
                 w.CHAT_ID_FILE = old_file
 
+    def test_weekly_chat_ids_includes_env_and_saved_chat_without_duplicates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old_file = w.CHAT_ID_FILE
+            old_env = w.os.environ.get("SUD_WEEKLY_CHAT_ID")
+            w.CHAT_ID_FILE = w.Path(tmp) / "weekly-chat-id"
+            w.CHAT_ID_FILE.write_text("777\n", encoding="utf-8")
+            w.os.environ["SUD_WEEKLY_CHAT_ID"] = "555"
+            try:
+                self.assertEqual(w.weekly_chat_ids(), ["555", "777"])
+                w.os.environ["SUD_WEEKLY_CHAT_ID"] = "777"
+                self.assertEqual(w.weekly_chat_ids(), ["777"])
+            finally:
+                w.CHAT_ID_FILE = old_file
+                if old_env is None:
+                    w.os.environ.pop("SUD_WEEKLY_CHAT_ID", None)
+                else:
+                    w.os.environ["SUD_WEEKLY_CHAT_ID"] = old_env
+
 
 if __name__ == "__main__":
     unittest.main()

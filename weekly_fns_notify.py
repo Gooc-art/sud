@@ -76,6 +76,13 @@ def weekly_chat_id() -> str:
     return ""
 
 
+def weekly_chat_ids() -> list[str]:
+    chat_ids = [os.environ.get("SUD_WEEKLY_CHAT_ID", "").strip()]
+    if CHAT_ID_FILE.exists():
+        chat_ids.append(CHAT_ID_FILE.read_text(encoding="utf-8").strip())
+    return list(dict.fromkeys(chat_id for chat_id in chat_ids if chat_id))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", help="today override, YYYY-MM-DD")
@@ -95,11 +102,14 @@ def main(argv: list[str] | None = None) -> int:
     found = tax_rows(outdir / "report.csv")
     print(f"tax_rows={len(found)} xlsx={outdir / 'report.xlsx'}")
 
-    chat_id = weekly_chat_id()
+    chat_ids = weekly_chat_ids()
     if (found or args.force_send) and not args.no_send:
-        if not re.fullmatch(r"-?\d+", chat_id):
+        if not chat_ids:
             raise RuntimeError("SUD_WEEKLY_CHAT_ID is not set")
-        notify(chat_id, start, end, outdir, len(found), args.force_send)
+        for chat_id in chat_ids:
+            if not re.fullmatch(r"-?\d+", chat_id):
+                raise RuntimeError("SUD_WEEKLY_CHAT_ID is not set")
+            notify(chat_id, start, end, outdir, len(found), args.force_send)
     return 0
 
 

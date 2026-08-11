@@ -108,7 +108,7 @@ cd ~/sud-app
 ./scripts/install_max_bot_service.sh
 ```
 
-Установка воскресной ночной проверки ФНС:
+Установка еженедельной проверки ФНС:
 
 ```bash
 cd ~/sud-app
@@ -129,7 +129,7 @@ systemctl --user restart sud-max-bot.service
 - `/week` — выгрузка за прошлую полную неделю.
 - `/period` — выбор периода.
 - `/status` — статус последней задачи.
-- `/weekly_here` — сохранить текущий групповой чат для воскресных уведомлений ФНС.
+- `/weekly_here` — сохранить текущий групповой чат для еженедельных уведомлений ФНС.
 - `/cancel` — отмена ввода.
 
 Автоуведомление по ФНС:
@@ -138,4 +138,4 @@ systemctl --user restart sud-max-bot.service
 ./scripts/install_weekly_fns_timer.sh
 ```
 
-Таймер или workflow `weekly-fns` запускает сбор на следующую неделю в воскресенье ночью и шлет `report.xlsx` в `SUD_WEEKLY_CHAT_ID`, если ФНС найдена.
+Таймер запускает сбор на следующую неделю по понедельникам в 00:30 и шлет `report.xlsx` в привязанный чат (`/weekly_here`, файл `SUD_WEEKLY_CHAT_ID_FILE`) или `SUD_WEEKLY_CHAT_ID`, если ФНС найдена. Workflow `weekly-fns` настроен на тот же запуск через UTC-cron.
