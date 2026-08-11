@@ -138,4 +138,4 @@ systemctl --user restart sud-max-bot.service
 ./scripts/install_weekly_fns_timer.sh
 ```
 
-Таймер запускает сбор на следующую неделю по понедельникам в 00:30 и шлет `report.xlsx` в привязанный чат (`/weekly_here`, файл `SUD_WEEKLY_CHAT_ID_FILE`) или `SUD_WEEKLY_CHAT_ID`, если ФНС найдена. Workflow `weekly-fns` настроен на тот же запуск через UTC-cron.
+Таймер запускает сбор на следующую неделю по понедельникам в 00:30 и шлет `report.xlsx` в привязанный чат (`/weekly_here`, файл `SUD_WEEKLY_CHAT_ID_FILE`) или `SUD_WEEKLY_CHAT_ID`, если ФНС найдена. Workflow `weekly-fns` оставлен для ручного запуска.

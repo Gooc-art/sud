@@ -179,7 +179,7 @@ Inline-экраны:
 
 - файл: `weekly_fns_notify.py`
 - установка: `./scripts/install_weekly_fns_timer.sh`
-- workflow: `.github/workflows/weekly-fns.yml`
+- workflow: `.github/workflows/weekly-fns.yml` для ручного запуска
 - расписание: понедельник 00:30
 - чат: `/weekly_here` или `SUD_WEEKLY_CHAT_ID` в `~/.config/sud/max-bot.env`
 
