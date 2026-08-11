@@ -17,3 +17,7 @@ jobs:
           git -C "$HOME/sud-app" fetch origin main
           git -C "$HOME/sud-app" reset --hard origin/main
           chmod +x "$HOME/sud-app/sud_export.py"
+          chmod +x "$HOME/sud-app/weekly_fns_notify.py"
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          "$HOME/sud-app/scripts/install_weekly_fns_timer.sh"

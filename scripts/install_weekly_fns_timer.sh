@@ -44,4 +44,4 @@ EOF
 
 systemctl --user daemon-reload
 systemctl --user enable --now sud-weekly-fns.timer
-systemctl --user status sud-weekly-fns.timer || true
+systemctl --user status sud-weekly-fns.timer --no-pager || true
