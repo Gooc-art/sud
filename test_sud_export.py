@@ -60,6 +60,14 @@ class SudExportTest(unittest.TestCase):
 
         self.assertIn("ФНС участвует", workbook)
 
+    def test_read_url_rejects_cached_bad_gateway(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = s.Path(tmp) / "bad.html"
+            path.write_text("<html><title>502 Bad Gateway</title></html>", encoding="utf-8")
+
+            with self.assertRaisesRegex(RuntimeError, "bad gateway"):
+                s.read_url("https://court.test", path)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -132,9 +132,11 @@ def iter_dates(start: date, end: date):
 
 def read_url(url: str, cache_path: Path, refresh: bool = False, timeout: int = 12) -> str:
     if cache_path.exists() and not refresh:
-        return cache_path.read_text(encoding="utf-8", errors="replace")
+        text = cache_path.read_text(encoding="utf-8", errors="replace")
+        validate_page(text, url)
+        return text
     result = subprocess.run(
-        ["curl", "-L", "-sS", "--max-time", str(timeout), "-A", "Mozilla/5.0 sud-export/0.1", url],
+        ["curl", "-L", "-f", "-sS", "--max-time", str(timeout), "-A", "Mozilla/5.0 sud-export/0.1", url],
         capture_output=True,
         timeout=timeout + 2,
     )
@@ -144,9 +146,15 @@ def read_url(url: str, cache_path: Path, refresh: bool = False, timeout: int = 1
     text = raw.decode("utf-8", errors="replace")
     if text.count("�") > 10:
         text = raw.decode("windows-1251", errors="replace")
+    validate_page(text, url)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(text, encoding="utf-8")
     return text
+
+
+def validate_page(text: str, url: str) -> None:
+    if "Bad Gateway" in text:
+        raise RuntimeError(f"bad gateway: {url}")
 
 
 def schedule_url(host: str, day: date) -> str:
