@@ -23,6 +23,11 @@
 - Рабочая папка на сервере: `/home/localadmin/sud-app`
 - GitHub Actions runner: `BOTSGSN-sud`
 - Автодеплой: push в `main` обновляет `/home/localadmin/sud-app`
+- Deploy workflow: `.github/workflows/deploy.yml`, только обновляет файлы.
+- Restart MAX-бота: ручной workflow `.github/workflows/max-bot.yml`.
+- Runner service: `actions.runner.Gooc-art-sud.BOTSGSN-sud.service`
+- Runner folder: `/home/localadmin/actions-runner/actions-runner-sud`
+- Не путать с `/home/localadmin/actions-runner`: это runner для `Gooc-art/energo`.
 
 ## Основной CLI
 

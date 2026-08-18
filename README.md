@@ -90,7 +90,26 @@ $HOME/sud-app
 Workflow деплоя только обновляет файлы. Для перезапуска MAX-бота используйте
 ручной workflow `.github/workflows/max-bot.yml`.
 
-Статус runner проверяется на странице Actions runners в GitHub.
+Статус runner проверяется на странице Actions runners в GitHub или командой:
+
+```bash
+gh api repos/Gooc-art/sud/actions/runners
+```
+
+Runner `BOTSGSN-sud` на сервере работает как systemd service:
+
+```text
+actions.runner.Gooc-art-sud.BOTSGSN-sud.service
+```
+
+Рабочая папка runner-а:
+
+```text
+/home/localadmin/actions-runner/actions-runner-sud
+```
+
+Важно: `/home/localadmin/actions-runner` относится к другому репозиторию
+`Gooc-art/energo`; для `sud` нужен именно вложенный `actions-runner-sud`.
 
 ## MAX бот
 
