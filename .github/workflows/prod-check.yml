@@ -1,0 +1,24 @@
+name: prod-check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: self-hosted
+    steps:
+      - name: Check prod bot
+        run: |
+          set -eu
+          echo "repo_head=$(git -C "$HOME/sud-app" rev-parse --short HEAD)"
+          echo "origin_head=$(git -C "$HOME/sud-app" rev-parse --short origin/main)"
+          grep -n "commerce\\|SUD_COMMERCE_PASSWORD\\|Введите пароль" "$HOME/sud-app/max_bot.py"
+          if grep -q '^SUD_COMMERCE_PASSWORD=.\+' "$HOME/.config/sud/max-bot.env"; then
+            echo "commerce_password_set=true"
+          else
+            echo "commerce_password_set=false"
+          fi
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          systemctl --user is-active sud-max-bot.service
+          systemctl --user show sud-max-bot.service -p MainPID -p ExecMainStartTimestamp --no-pager
