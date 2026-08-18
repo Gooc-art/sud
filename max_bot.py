@@ -497,7 +497,12 @@ def poll() -> None:
         params = {"limit": 20, "timeout": 30, "types": "bot_started,message_created,message_callback"}
         if marker is not None:
             params["marker"] = marker
-        data = request("GET", "/updates", params)
+        try:
+            data = request("GET", "/updates", params)
+        except Exception as exc:
+            print(f"poll error: {exc}", file=sys.stderr)
+            time.sleep(5)
+            continue
         marker = data.get("marker", marker)
         for update in data.get("updates") or []:
             try:

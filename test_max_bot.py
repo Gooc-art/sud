@@ -201,6 +201,23 @@ class MaxBotTest(unittest.TestCase):
 
         self.assertEqual(calls[0]["types"], "bot_started,message_created,message_callback")
 
+    def test_poll_keeps_running_after_update_fetch_error(self):
+        calls = []
+
+        def fake_request(_method, _path, params):
+            calls.append(params)
+            if len(calls) == 1:
+                raise OSError("network")
+            raise KeyboardInterrupt
+
+        with mock.patch.object(b, "request", side_effect=fake_request):
+            with mock.patch.object(b.time, "sleep") as sleep:
+                with self.assertRaises(KeyboardInterrupt):
+                    b.poll()
+
+        sleep.assert_called_once_with(5)
+        self.assertEqual(len(calls), 2)
+
     def test_stale_court_button_without_period_asks_for_period(self):
         b.sessions.clear()
         shown = []
