@@ -16,6 +16,8 @@ class MaxBotTest(unittest.TestCase):
         b.ADMIN_PHONES = {"79320588150"}
         b.commerce_password_pending.clear()
         b.verified_admin_phones.clear()
+        b.approved_user_ids.clear()
+        b.pending_access_requests.clear()
         b.verified_admin_phones["42"] = "79320588150"
 
     def tearDown(self):
@@ -583,19 +585,27 @@ class MaxBotTest(unittest.TestCase):
     def test_screen_state_survives_restart(self):
         b.sessions.clear()
         b.verified_admin_phones.clear()
+        b.approved_user_ids.clear()
+        b.pending_access_requests.clear()
         with tempfile.TemporaryDirectory() as tmp:
             state_file = b.Path(tmp) / "state.json"
             with mock.patch.object(b, "STATE_FILE", state_file):
                 b.sessions["1"] = b.Session(menu_message_id="screen-1", screen_type="auth")
                 b.verified_admin_phones["1"] = "79320588150"
+                b.approved_user_ids.add("23325864")
+                b.pending_access_requests["2"] = {"phone": "79129111119", "chat_id": "7"}
                 b.save_state()
                 b.sessions.clear()
                 b.verified_admin_phones.clear()
+                b.approved_user_ids.clear()
+                b.pending_access_requests.clear()
                 b.load_state()
 
         self.assertEqual(b.sessions["1"].menu_message_id, "screen-1")
         self.assertEqual(b.sessions["1"].screen_type, "auth")
         self.assertIn("1", b.verified_admin_phones)
+        self.assertIn("23325864", b.approved_user_ids)
+        self.assertEqual(b.pending_access_requests["2"]["phone"], "79129111119")
 
     def test_legacy_verified_key_does_not_make_user_admin(self):
         b.sessions.clear()
@@ -706,7 +716,7 @@ class MaxBotTest(unittest.TestCase):
         with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
             with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
                 with mock.patch.object(b, "show_menu") as show_menu:
-                    with mock.patch.object(b, "send_auth_request") as send_auth_request:
+                    with mock.patch.object(b, "show_screen") as show_screen:
                         with mock.patch.object(b, "notify_admins_about_contact") as notify:
                             with mock.patch.object(b, "ack_callback"):
                                 b.handle(target, text, payload, callback_id, source_message_id, contact_phone)
@@ -714,8 +724,73 @@ class MaxBotTest(unittest.TestCase):
 
         self.assertEqual(contact_phone, "79129111119")
         show_menu.assert_not_called()
-        send_auth_request.assert_called_once_with({"user_id": 23325864})
+        self.assertEqual(b.pending_access_requests["23325864"]["phone"], "79129111119")
+        show_screen.assert_called_once()
         notify.assert_called_once_with({"user_id": 23325864}, "79129111119", False)
+
+    def test_non_admin_contact_notifies_admin_with_access_buttons(self):
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                with mock.patch.object(b, "send_text") as send_text:
+                    with mock.patch.object(b, "show_screen"):
+                        b.handle({"user_id": 23325864}, "", contact_phone="79129111119")
+
+        send_text.assert_called_once()
+        self.assertEqual(send_text.call_args.args[0], {"user_id": 6393482})
+        self.assertEqual(
+            send_text.call_args.args[2],
+            [[("✅ Дать доступ", "access:approve:23325864"), ("❌ Отказать", "access:deny:23325864")]],
+        )
+
+    def test_admin_approve_contact_request_grants_user(self):
+        b.pending_access_requests["23325864"] = {"phone": "79129111119", "chat_id": ""}
+        shown = []
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "show_menu", side_effect=lambda target, text, buttons, *_args: shown.append((target, text))):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 6393482}, "", "access:approve:23325864", "cb1")
+
+        self.assertIn("23325864", b.approved_user_ids)
+        self.assertNotIn("23325864", b.pending_access_requests)
+        self.assertEqual(shown[0][0], {"user_id": 23325864})
+        self.assertIn("Доступ подтвержден", shown[0][1])
+
+    def test_admin_deny_contact_request_does_not_grant_user(self):
+        b.pending_access_requests["23325864"] = {"phone": "79129111119", "chat_id": ""}
+        shown = []
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "show_screen", side_effect=lambda target, text, *_args: shown.append((target, text))):
+                with mock.patch.object(b, "show_menu"):
+                    with mock.patch.object(b, "ack_callback"):
+                        b.handle({"user_id": 6393482}, "", "access:deny:23325864", "cb1")
+
+        self.assertNotIn("23325864", b.approved_user_ids)
+        self.assertNotIn("23325864", b.pending_access_requests)
+        self.assertEqual(shown[0][0], {"user_id": 23325864})
+        self.assertIn("отказано", shown[0][1])
+
+    def test_non_admin_cannot_approve_contact_request(self):
+        b.pending_access_requests["23325864"] = {"phone": "79129111119", "chat_id": ""}
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "send_auth_request") as send_auth_request:
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 23325864}, "", "access:approve:23325864", "cb1")
+
+        self.assertNotIn("23325864", b.approved_user_ids)
+        self.assertIn("23325864", b.pending_access_requests)
+        send_auth_request.assert_called_once_with({"user_id": 23325864})
+
+    def test_approved_user_can_open_menu(self):
+        b.approved_user_ids.add("23325864")
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                with mock.patch.object(b, "show_menu") as show_menu:
+                    with mock.patch.object(b, "send_auth_request") as send_auth_request:
+                        with mock.patch.object(b, "ack_callback"):
+                            b.handle({"user_id": 23325864}, "/start")
+
+        show_menu.assert_called_once()
+        send_auth_request.assert_not_called()
 
     def test_non_admin_nested_callback_cannot_open_commerce_from_old_menu(self):
         b.sessions.clear()

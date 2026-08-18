@@ -82,6 +82,8 @@ jobs: dict[str, Job] = {}
 job_queue: queue.Queue[Job] = queue.Queue()
 commerce_password_pending: set[str] = set()
 verified_admin_phones: dict[str, str] = {}
+approved_user_ids: set[str] = set()
+pending_access_requests: dict[str, dict[str, str]] = {}
 lock_file_handle = None
 
 
@@ -123,6 +125,14 @@ def load_state() -> None:
             if normalize_phone(str(phone)) in ADMIN_PHONES
         }
     )
+    approved_user_ids.update(str(user_id) for user_id in (data.get("approved_user_ids") or []) if str(user_id).isdigit())
+    pending_access_requests.update(
+        {
+            str(key): {"phone": normalize_phone(str(req.get("phone") or "")), "chat_id": str(req.get("chat_id") or "")}
+            for key, req in (data.get("pending_access_requests") or {}).items()
+            if str(key).isdigit() and normalize_phone(str(req.get("phone") or ""))
+        }
+    )
 
 
 def save_state() -> None:
@@ -132,6 +142,8 @@ def save_state() -> None:
             "menu_message_ids": {key: sess.menu_message_id for key, sess in sessions.items() if sess.menu_message_id},
             "screen_types": {key: sess.screen_type for key, sess in sessions.items() if sess.menu_message_id and sess.screen_type},
             "verified_admin_phones": dict(sorted(verified_admin_phones.items())),
+            "approved_user_ids": sorted(approved_user_ids),
+            "pending_access_requests": dict(sorted(pending_access_requests.items())),
         }
         tmp = STATE_FILE.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
@@ -196,6 +208,10 @@ def contact_keyboard() -> dict:
         "type": "inline_keyboard",
         "payload": {"buttons": [[{"type": "request_contact", "text": "Поделиться номером"}]]},
     }
+
+
+def access_review_buttons(user_id: str) -> list[list[tuple[str, str]]]:
+    return [[("✅ Дать доступ", f"access:approve:{user_id}"), ("❌ Отказать", f"access:deny:{user_id}")]]
 
 
 def message_id(response: dict) -> str | None:
@@ -341,7 +357,7 @@ def is_admin(target: dict) -> bool:
     if user_id is None:
         return False
     key = str(user_id)
-    return int(user_id) in ADMIN_USER_IDS or normalize_phone(verified_admin_phones.get(key, "")) in ADMIN_PHONES
+    return key in approved_user_ids or int(user_id) in ADMIN_USER_IDS or normalize_phone(verified_admin_phones.get(key, "")) in ADMIN_PHONES
 
 
 def prune_non_admin_screens() -> None:
@@ -386,11 +402,39 @@ def notify_admins_about_contact(target: dict, phone: str, granted: bool) -> None
     user_id = target.get("user_id") or "-"
     chat_id = target.get("chat_id") or "-"
     text = f"MAX бот: пользователь поделился номером {phone}; {status}. user_id={user_id}, chat_id={chat_id}"
+    buttons = access_review_buttons(str(user_id)) if not granted and str(user_id).isdigit() else None
     for admin_id in ADMIN_USER_IDS:
         try:
-            send_text({"user_id": admin_id}, text)
+            send_text({"user_id": admin_id}, text, buttons)
         except Exception as exc:
             print(f"admin contact notify error: {exc}", file=sys.stderr)
+
+
+def handle_access_review(target: dict, action: str) -> bool:
+    if not (action.startswith("access:approve:") or action.startswith("access:deny:")):
+        return False
+    reviewer_id = target.get("user_id")
+    if reviewer_id is None or int(reviewer_id) not in ADMIN_USER_IDS:
+        send_auth_request(target)
+        return True
+    approved = action.startswith("access:approve:")
+    requested_id = action.rsplit(":", 1)[-1]
+    request_info = pending_access_requests.pop(requested_id, None)
+    if approved and request_info:
+        approved_user_ids.add(requested_id)
+        save_state()
+        show_menu({"user_id": int(requested_id)}, "Доступ подтвержден администратором.", main_buttons())
+        show_menu(target, f"✅ Доступ выдан. user_id={requested_id}", main_buttons())
+        return True
+    approved_user_ids.discard(requested_id)
+    verified_admin_phones.pop(requested_id, None)
+    save_state()
+    if request_info:
+        show_screen({"user_id": int(requested_id)}, "❌ В доступе отказано. Поделитесь номером повторно, если это ошибка.", [contact_keyboard()], "auth")
+        show_menu(target, f"❌ Отказ отправлен. user_id={requested_id}", main_buttons())
+    else:
+        show_menu(target, "Заявка уже обработана.", main_buttons())
+    return True
 
 
 def show_screen(target: dict, text: str, attachments: list[dict] | None = None, screen_type: str = "menu") -> None:
@@ -582,6 +626,12 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
             print(f"delete callback source error: {exc}", file=sys.stderr)
     if contact_phone:
         granted = normalize_phone(contact_phone) in ADMIN_PHONES
+        if not granted and target.get("user_id"):
+            pending_access_requests[user_only_key(target)] = {
+                "phone": normalize_phone(contact_phone),
+                "chat_id": str(target.get("chat_id") or ""),
+            }
+            save_state()
         notify_admins_about_contact(target, normalize_phone(contact_phone), granted)
         if granted and target.get("user_id"):
             verified_admin_phones[user_only_key(target)] = normalize_phone(contact_phone)
@@ -589,7 +639,10 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
             show_menu(private_target(target), "Доступ подтвержден.", main_buttons())
             ack_callback(callback_id)
             return
-        send_auth_request(target)
+        show_screen(private_target(target), "Запрос отправлен админу. Ожидайте доступа.", [contact_keyboard()], "auth")
+        ack_callback(callback_id)
+        return
+    if handle_access_review(target, action):
         ack_callback(callback_id)
         return
     if not is_admin(target):
