@@ -48,6 +48,7 @@ ADMIN_PHONES = {
     if phone
 }
 COMMERCE_PASSWORD = os.environ.get("SUD_COMMERCE_PASSWORD", "")
+DEBUG_USER_IDS = {user_id for user_id in os.environ.get("SUD_DEBUG_USER_IDS", "23325864").replace(",", " ").split() if user_id}
 
 
 @dataclass
@@ -82,6 +83,11 @@ job_queue: queue.Queue[Job] = queue.Queue()
 commerce_password_pending: set[str] = set()
 verified_admin_phones: dict[str, str] = {}
 lock_file_handle = None
+
+
+def debug_target(target: dict, message: str) -> None:
+    if user_only_key(target) in DEBUG_USER_IDS:
+        print(f"[DEBUG-user-{user_only_key(target)}] {message}", file=sys.stderr, flush=True)
 
 
 def acquire_lock() -> None:
@@ -389,6 +395,7 @@ def notify_admins_about_contact(target: dict, phone: str, granted: bool) -> None
 
 def show_screen(target: dict, text: str, attachments: list[dict] | None = None, screen_type: str = "menu") -> None:
     sess = sessions.setdefault(session_key(target), Session())
+    debug_target(target, f"show_screen type={screen_type} prev_type={sess.screen_type or '-'} prev_mid={sess.menu_message_id or '-'} text={text[:80]!r} params={target_params(target)}")
     body = {"text": text[:4000]}
     if attachments:
         body["attachments"] = attachments
@@ -559,6 +566,12 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     sess = sessions.setdefault(key, Session())
     action = payload or text
     commerce_keys = target_keys(target)
+    debug_target(
+        target,
+        f"handle action={action!r} text={text!r} payload={payload!r} callback={bool(callback_id)} source_mid={source_message_id or '-'} "
+        f"contact={bool(contact_phone)} is_admin={is_admin(target)} sess_step={sess.step or '-'} sess_type={sess.screen_type or '-'} "
+        f"admin_ids={sorted(ADMIN_USER_IDS)} verified_phone={bool(verified_admin_phones.get(user_only_key(target)))}"
+    )
     if callback_id and source_message_id:
         try:
             delete_message(source_message_id)
