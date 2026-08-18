@@ -1,0 +1,32 @@
+name: max-bot-debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: self-hosted
+    steps:
+      - name: Inspect running bot
+        run: |
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          echo "== app revision =="
+          git -C "$HOME/sud-app" rev-parse HEAD
+          echo "== service =="
+          systemctl --user show sud-max-bot.service -p ActiveState -p MainPID -p ExecMainStartTimestamp
+          echo "== processes =="
+          ps -efww | grep '[m]ax_bot.py --poll' || true
+          echo "== env =="
+          grep -E '^(SUD_ADMIN_USER_IDS|SUD_ADMIN_PHONES|SUD_DEBUG_USER_IDS)=' "$HOME/.config/sud/max-bot.env" || true
+          echo "== state =="
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path.home() / ".config/sud/max-bot-state.json"
+          print("exists", path.exists())
+          if path.exists():
+              print(json.dumps(json.loads(path.read_text()), ensure_ascii=False, sort_keys=True))
+          PY
+          echo "== journal debug =="
+          journalctl --user -u sud-max-bot.service -n 300 --no-pager | grep -E 'DEBUG-user-23325864|update error|poll error|another max_bot|delete .*screen|callback source|Started sud-max-bot|Main PID' || true
