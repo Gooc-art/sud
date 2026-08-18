@@ -1,0 +1,30 @@
+name: kill-duplicate-max-bots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  kill:
+    runs-on: self-hosted
+    steps:
+      - name: Stop duplicate MAX bot processes
+        run: |
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          echo "== user services containing bot/max/sgsn =="
+          systemctl --user list-units --type=service --all | grep -Ei 'bot|max|sgsn' || true
+          echo "== user unit files containing sgsn-max-bot =="
+          grep -RIl 'sgsn-max-bot/max_bot.py' "$HOME/.config/systemd/user" /etc/systemd/user 2>/dev/null || true
+          for unit in $(grep -RIl 'sgsn-max-bot/max_bot.py' "$HOME/.config/systemd/user" /etc/systemd/user 2>/dev/null | xargs -r -n1 basename); do
+            echo "Disabling duplicate unit $unit"
+            systemctl --user disable --now "$unit" || true
+          done
+          echo "== killing duplicate path =="
+          pkill -9 -f '/home/localadmin/sgsn-max-bot/max_bot.py --poll' || true
+          echo "== restarting intended bot =="
+          systemctl --user restart sud-max-bot.service
+          sleep 2
+          echo "== processes after cleanup =="
+          ps -efww | grep '[m]ax_bot.py --poll' || true
+          test "$(ps -efww | grep -c '[s]ud-app/max_bot.py --poll')" = "1"
+          test "$(ps -efww | grep -c '[s]gsn-max-bot/max_bot.py --poll')" = "0"
