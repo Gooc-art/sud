@@ -13,6 +13,23 @@ class MaxBotTest(unittest.TestCase):
         b.commerce_password_pending.clear()
         b.verified_admin_keys.clear()
 
+    def signed_contact_update(self, user_id=1, phone="+7 932 058-81-50"):
+        vcf_info = f"BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=cell:{phone}\r\nFN:Admin\r\nEND:VCARD\r\n"
+        contact_hash = hmac.new(b.TOKEN.encode(), vcf_info.encode(), hashlib.sha256).hexdigest()
+        return {
+            "message": {
+                "user_id": user_id,
+                "body": {
+                    "attachments": [
+                        {
+                            "type": "contact",
+                            "payload": {"vcf_info": vcf_info, "hash": contact_hash},
+                        }
+                    ]
+                },
+            }
+        }
+
     def test_last_full_week(self):
         self.assertEqual(b.last_full_week(dt.date(2026, 7, 29)), (dt.date(2026, 7, 20), dt.date(2026, 7, 26)))
 
@@ -161,7 +178,7 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(calls[1][0:2], ("POST", "/messages"))
         self.assertEqual(b.sessions["42"].menu_message_id, "new")
 
-    def test_start_posts_new_menu_after_reopening_bot(self):
+    def test_start_reuses_existing_menu_after_reopening_bot(self):
         b.sessions.clear()
         b.sessions["42"] = b.Session(menu_message_id="old")
         calls = []
@@ -174,8 +191,8 @@ class MaxBotTest(unittest.TestCase):
             with mock.patch.object(b.time, "sleep"):
                 b.handle({"user_id": 42}, "/start")
 
-        self.assertEqual(calls[0][0:2], ("POST", "/messages"))
-        self.assertEqual(b.sessions["42"].menu_message_id, "new")
+        self.assertEqual(calls[0], ("PUT", "/messages", {"message_id": "old"}))
+        self.assertEqual(b.sessions["42"].menu_message_id, "old")
 
     def test_callback_action_survives_answer_failure(self):
         b.sessions.clear()
@@ -494,26 +511,67 @@ class MaxBotTest(unittest.TestCase):
         show_menu.assert_not_called()
         ack.assert_called_once_with("cb1")
 
-    def test_contact_phone_authorizes_admin_and_notifies(self):
-        vcf_info = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=cell:+7 932 058-81-50\r\nFN:Admin\r\nEND:VCARD\r\n"
-        contact_hash = hmac.new(b.TOKEN.encode(), vcf_info.encode(), hashlib.sha256).hexdigest()
+    def test_auth_request_stores_and_reuses_screen(self):
+        b.sessions.clear()
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params, body))
+            return {"message": {"body": {"mid": "auth-1"}}}
+
+        with mock.patch.object(b, "request", side_effect=fake_request):
+            with mock.patch.object(b.time, "sleep"):
+                b.send_auth_request({"user_id": 1})
+                b.send_auth_request({"user_id": 1})
+
+        self.assertEqual(calls[0][0:3], ("POST", "/messages", {"user_id": 1}))
+        self.assertEqual(calls[1][0:3], ("PUT", "/messages", {"message_id": "auth-1"}))
+        self.assertEqual(calls[0][3]["attachments"][0]["payload"]["buttons"][0][0]["type"], "request_contact")
+        self.assertEqual(b.sessions["1"].menu_message_id, "auth-1")
+
+    def test_contact_success_replaces_auth_screen_with_menu(self):
+        b.sessions.clear()
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params, body))
+            if method == "POST" and params == {"user_id": 1}:
+                return {"message": {"body": {"mid": "auth-1"}}}
+            return {"success": True}
 
         with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
             with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                with mock.patch.object(b, "request", side_effect=fake_request):
+                    with mock.patch.object(b, "ack_callback"):
+                        with mock.patch.object(b.time, "sleep"):
+                            b.handle({"user_id": 1}, "/start")
+                            b.handle(*b.extract_event(self.signed_contact_update()))
+
+        self.assertEqual(calls[0][0:3], ("POST", "/messages", {"user_id": 1}))
+        self.assertEqual(calls[-1][0:3], ("PUT", "/messages", {"message_id": "auth-1"}))
+        self.assertIn("Доступ подтвержден", calls[-1][3]["text"])
+        self.assertEqual(b.sessions["1"].menu_message_id, "auth-1")
+
+    def test_auth_request_without_user_id_has_no_contact_button(self):
+        b.sessions.clear()
+        bodies = []
+
+        def fake_request(method, path, params=None, body=None):
+            bodies.append(body)
+            return {"message": {"body": {"mid": "auth-1"}}}
+
+        with mock.patch.object(b, "request", side_effect=fake_request):
+            with mock.patch.object(b.time, "sleep"):
+                b.send_auth_request({"chat_id": 7})
+
+        self.assertNotIn("attachments", bodies[0])
+        self.assertIn("Откройте бота в личке", bodies[0]["text"])
+
+    def test_contact_phone_authorizes_admin_and_notifies(self):
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
                 target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
-                    {
-                        "message": {
-                            "user_id": 1,
-                            "body": {
-                                "attachments": [
-                                    {
-                                        "type": "contact",
-                                        "payload": {"vcf_info": vcf_info, "hash": contact_hash},
-                                    }
-                                ]
-                            },
-                        }
-                    }
+                    self.signed_contact_update()
                 )
                 with mock.patch.object(b, "show_menu") as show_menu:
                     with mock.patch.object(b, "send_text") as send_text:
@@ -525,6 +583,17 @@ class MaxBotTest(unittest.TestCase):
         show_menu.assert_called_once()
         send_text.assert_called_once()
         self.assertEqual(send_text.call_args.args[0], {"user_id": 6393482})
+
+    def test_contact_login_does_not_verify_chat_id(self):
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                with mock.patch.object(b, "notify_admins_about_contact"):
+                    with mock.patch.object(b, "show_menu"):
+                        with mock.patch.object(b, "ack_callback"):
+                            b.handle({"user_id": 1, "chat_id": 7}, "", contact_phone="79320588150")
+
+            self.assertTrue(b.is_admin({"user_id": 1}))
+            self.assertFalse(b.is_admin({"chat_id": 7}))
 
     def test_verified_contact_can_open_menu_next_time(self):
         with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
@@ -561,6 +630,25 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.sessions["42"].step, "period")
         self.assertEqual(shown[-1], "Выберите период выгрузки по коммерции.")
 
+    def test_commerce_prompt_replaces_main_menu(self):
+        b.sessions.clear()
+        b.sessions["42"] = b.Session(menu_message_id="menu-1")
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params, body))
+            return {"success": True}
+
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "request", side_effect=fake_request):
+                with mock.patch.object(b, "ack_callback"):
+                    with mock.patch.object(b.time, "sleep"):
+                        b.handle({"user_id": 42}, "", "commerce", "cb1")
+
+        self.assertEqual(calls[0][0:3], ("PUT", "/messages", {"message_id": "menu-1"}))
+        self.assertEqual(calls[0][3]["text"], "Введите пароль для выгрузки по коммерции.")
+        self.assertEqual(b.sessions["42"].menu_message_id, "menu-1")
+
     def test_bad_commerce_password_stays_on_password_step(self):
         b.sessions.clear()
         shown = []
@@ -572,6 +660,25 @@ class MaxBotTest(unittest.TestCase):
 
         self.assertEqual(b.sessions["42"].step, "commerce_password")
         self.assertEqual(shown[-1], "Неверный пароль. Введите пароль еще раз.")
+
+    def test_bad_commerce_password_reuses_password_screen(self):
+        b.sessions.clear()
+        b.sessions["42"] = b.Session(step="commerce_password", menu_message_id="commerce-1")
+        b.commerce_password_pending.add("42")
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params, body))
+            return {"success": True}
+
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "request", side_effect=fake_request):
+                with mock.patch.object(b, "ack_callback"):
+                    with mock.patch.object(b.time, "sleep"):
+                        b.handle({"user_id": 42}, "wrong")
+
+        self.assertEqual(calls[0][0:3], ("PUT", "/messages", {"message_id": "commerce-1"}))
+        self.assertEqual(calls[0][3]["text"], "Неверный пароль. Введите пароль еще раз.")
 
     def test_commerce_password_blocks_stale_period_buttons(self):
         b.sessions.clear()
@@ -623,8 +730,20 @@ class MaxBotTest(unittest.TestCase):
                     b.handle({"user_id": 42, "chat_id": 7}, "", "commerce", "cb1")
                     b.handle({"chat_id": 7}, "", "week", "cb2")
 
-        self.assertEqual(b.sessions["7"].step, "")
+        self.assertEqual(b.sessions["7"].step, "commerce_password")
         self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
+
+    def test_commerce_password_text_wins_over_reserved_actions(self):
+        b.sessions.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "week"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "commerce", "cb1")
+                    b.handle({"user_id": 42}, "week")
+
+        self.assertEqual(b.sessions["42"].step, "period")
+        self.assertEqual(shown[-1], "Выберите период выгрузки по коммерции.")
 
 
 if __name__ == "__main__":

@@ -157,28 +157,14 @@ def send_text(target: dict, text: str, buttons: list[list[tuple[str, str]]] | No
 
 
 def send_auth_request(target: dict) -> None:
-    request(
-        "POST",
-        "/messages",
-        target_params(target),
-        {"text": "Нет доступа. Поделитесь номером для входа.", "attachments": [contact_keyboard()]},
-    )
-    time.sleep(0.55)
+    if target.get("user_id"):
+        show_screen(private_target(target), "Нет доступа. Поделитесь номером для входа.", [contact_keyboard()])
+    else:
+        show_screen(target, "Откройте бота в личке для авторизации.")
 
 
 def show_menu(target: dict, text: str, buttons: list[list[tuple[str, str]]]) -> None:
-    sess = sessions.setdefault(session_key(target), Session())
-    body = {"text": text[:4000], "attachments": [keyboard(buttons)]}
-    if sess.menu_message_id:
-        try:
-            response = request("PUT", "/messages", {"message_id": sess.menu_message_id}, body)
-            if response.get("success") is False:
-                raise RuntimeError(response.get("message") or "menu edit failed")
-            time.sleep(0.55)
-            return
-        except Exception:
-            sess.menu_message_id = None
-    sess.menu_message_id = message_id(send_text(target, text, buttons))
+    show_screen(target, text, [keyboard(buttons)])
 
 
 def answer_callback(callback_id: str, text: str = "") -> None:
@@ -281,12 +267,20 @@ def target_keys(target: dict) -> set[str]:
     return {str(value) for value in (target.get("user_id"), target.get("chat_id")) if value}
 
 
+def user_only_key(target: dict) -> str:
+    return str(target.get("user_id") or "")
+
+
+def private_target(target: dict) -> dict:
+    return {"user_id": target["user_id"]} if target.get("user_id") else target
+
+
 def is_admin(target: dict) -> bool:
     user_id = target.get("user_id")
     return (
         not ADMIN_USER_IDS
         or (user_id is not None and int(user_id) in ADMIN_USER_IDS)
-        or bool(target_keys(target) & verified_admin_keys)
+        or user_only_key(target) in verified_admin_keys
     )
 
 
@@ -321,6 +315,25 @@ def notify_admins_about_contact(target: dict, phone: str, granted: bool) -> None
             send_text({"user_id": admin_id}, text)
         except Exception as exc:
             print(f"admin contact notify error: {exc}", file=sys.stderr)
+
+
+def show_screen(target: dict, text: str, attachments: list[dict] | None = None) -> None:
+    sess = sessions.setdefault(session_key(target), Session())
+    body = {"text": text[:4000]}
+    if attachments:
+        body["attachments"] = attachments
+    if sess.menu_message_id:
+        try:
+            response = request("PUT", "/messages", {"message_id": sess.menu_message_id}, body)
+            if response.get("success") is False:
+                raise RuntimeError(response.get("message") or "screen edit failed")
+            time.sleep(0.55)
+            return
+        except Exception:
+            sess.menu_message_id = None
+    response = request("POST", "/messages", target_params(target), body)
+    time.sleep(0.55)
+    sess.menu_message_id = message_id(response)
 
 
 def rows_count(csv_path: Path) -> int:
@@ -455,12 +468,23 @@ def extract_event(update: dict) -> tuple[dict, str, str, str, str, str]:
 def handle(target: dict, text: str, payload: str = "", callback_id: str = "", source_message_id: str = "", contact_phone: str = "") -> None:
     if not target.get("user_id") and not target.get("chat_id"):
         return
+    key = session_key(target)
+    sess = sessions.setdefault(key, Session())
+    action = payload or text
+    commerce_keys = target_keys(target)
+    if callback_id and source_message_id:
+        try:
+            delete_message(source_message_id)
+            if sess.menu_message_id == source_message_id:
+                sess.menu_message_id = None
+        except Exception as exc:
+            print(f"delete callback source error: {exc}", file=sys.stderr)
     if contact_phone:
         granted = normalize_phone(contact_phone) in ADMIN_PHONES
         notify_admins_about_contact(target, normalize_phone(contact_phone), granted)
-        if granted:
-            verified_admin_keys.update(target_keys(target))
-            show_menu(target, "Доступ подтвержден.", main_buttons())
+        if granted and target.get("user_id"):
+            verified_admin_keys.add(user_only_key(target))
+            show_menu(private_target(target), "Доступ подтвержден.", main_buttons())
             ack_callback(callback_id)
             return
         send_auth_request(target)
@@ -470,32 +494,30 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
         send_auth_request(target)
         ack_callback(callback_id)
         return
-    key = session_key(target)
-    sess = sessions.setdefault(key, Session())
-    action = payload or text
-    commerce_key = user_key(target)
-    commerce_keys = target_keys(target)
-    if callback_id and source_message_id:
-        try:
-            delete_message(source_message_id)
-        except Exception as exc:
-            print(f"delete callback source error: {exc}", file=sys.stderr)
-        if sess.menu_message_id == source_message_id:
-            sess.menu_message_id = None
 
-    if commerce_keys & commerce_password_pending and (
-        (payload and action not in {"main", "cancel", "commerce"})
-        or action in {"/period", "/month", "/week"}
-    ):
-        show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()])
-        ack_callback(callback_id)
-        return
+    if sess.step == "commerce_password" or (commerce_keys & commerce_password_pending):
+        if action in {"main", "cancel", "/cancel"}:
+            commerce_password_pending.difference_update(commerce_keys)
+            sess.step = ""
+            show_menu(target, "Отменено.", main_buttons())
+            ack_callback(callback_id)
+            return
+        if not payload and text == COMMERCE_PASSWORD:
+            commerce_password_pending.difference_update(commerce_keys)
+            sess.step = "period"
+            show_menu(target, "Выберите период выгрузки по коммерции.", period_buttons())
+            ack_callback(callback_id)
+            return
+        if action != "commerce":
+            sess.step = "commerce_password"
+            text = "Введите пароль для выгрузки по коммерции." if payload or action.startswith("/") else "Неверный пароль. Введите пароль еще раз."
+            show_menu(target, text, [nav_buttons()])
+            ack_callback(callback_id)
+            return
 
     if action in {"/start", "start", "Старт", "main"}:
         commerce_password_pending.difference_update(commerce_keys)
         sess.step = ""
-        if not callback_id:
-            sess.menu_message_id = None
         show_menu(target, "Бот делает выгрузку судебных дел ЯНАО в Excel/PDF/CSV.", main_buttons())
     elif action in {"/month", "month"}:
         sess.date_from, sess.date_to = last_full_month()
