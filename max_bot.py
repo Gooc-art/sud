@@ -59,6 +59,7 @@ class Job:
 sessions: dict[str, Session] = {}
 jobs: dict[str, Job] = {}
 job_queue: queue.Queue[Job] = queue.Queue()
+commerce_password_pending: set[str] = set()
 
 
 def request(method: str, path: str, params: dict | None = None, body: dict | None = None) -> dict:
@@ -230,7 +231,11 @@ def parse_ru_date(text: str) -> date | None:
 
 
 def session_key(target: dict) -> str:
-    return str(target.get("chat_id") or target["user_id"])
+    return str(target.get("user_id") or target["chat_id"])
+
+
+def user_key(target: dict) -> str:
+    return str(target.get("user_id") or target.get("chat_id") or "")
 
 
 def is_admin(target: dict) -> bool:
@@ -366,13 +371,15 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "") ->
     key = session_key(target)
     sess = sessions.setdefault(key, Session())
     action = payload or text
+    commerce_key = user_key(target)
 
-    if sess.step == "commerce_password" and payload and action not in {"main", "cancel"}:
+    if commerce_key in commerce_password_pending and payload and action not in {"main", "cancel", "commerce"}:
         show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()])
         ack_callback(callback_id)
         return
 
     if action in {"/start", "start", "Старт", "main"}:
+        commerce_password_pending.discard(commerce_key)
         sess.step = ""
         show_menu(target, "Бот делает выгрузку судебных дел ЯНАО в Excel/PDF/CSV.", main_buttons())
     elif action in {"/month", "month"}:
@@ -401,6 +408,10 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "") ->
         if not COMMERCE_PASSWORD:
             show_menu(target, "Пароль коммерции не настроен.", main_buttons())
         else:
+            commerce_password_pending.add(commerce_key)
+            sess.date_from = None
+            sess.date_to = None
+            sess.court = None
             sess.step = "commerce_password"
             show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()])
     elif action == "status" or action == "/status":
@@ -415,6 +426,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "") ->
         else:
             show_menu(target, "Команду нужно отправить в групповом чате.", main_buttons())
     elif action in {"cancel", "/cancel"}:
+        commerce_password_pending.discard(commerce_key)
         sess.step = ""
         show_menu(target, "Отменено.", main_buttons())
     elif action == "choose_court":
@@ -461,6 +473,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "") ->
         show_menu(target, "Выберите суд.", court_buttons("court"))
     elif sess.step == "commerce_password":
         if text == COMMERCE_PASSWORD:
+            commerce_password_pending.discard(commerce_key)
             sess.step = "period"
             show_menu(target, "Выберите период выгрузки по коммерции.", period_buttons())
         else:

@@ -6,6 +6,9 @@ import max_bot as b
 
 
 class MaxBotTest(unittest.TestCase):
+    def setUp(self):
+        b.commerce_password_pending.clear()
+
     def test_last_full_week(self):
         self.assertEqual(b.last_full_week(dt.date(2026, 7, 29)), (dt.date(2026, 7, 20), dt.date(2026, 7, 26)))
 
@@ -361,6 +364,18 @@ class MaxBotTest(unittest.TestCase):
                 with mock.patch.object(b, "ack_callback"):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "", "period_current", "cb2")
+
+        self.assertEqual(b.sessions["42"].step, "commerce_password")
+        self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
+
+    def test_commerce_password_survives_callback_target_shape_drift(self):
+        b.sessions.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"chat_id": 7, "user_id": 42}, "", "commerce", "cb1")
+                    b.handle({"user_id": 42}, "", "week", "cb2")
 
         self.assertEqual(b.sessions["42"].step, "commerce_password")
         self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
