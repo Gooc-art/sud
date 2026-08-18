@@ -10,9 +10,17 @@ import max_bot as b
 
 class MaxBotTest(unittest.TestCase):
     def setUp(self):
+        self.old_admin_user_ids = b.ADMIN_USER_IDS
+        self.old_admin_phones = b.ADMIN_PHONES
+        b.ADMIN_USER_IDS = {42}
+        b.ADMIN_PHONES = {"79320588150"}
         b.commerce_password_pending.clear()
         b.verified_admin_phones.clear()
         b.verified_admin_phones["42"] = "79320588150"
+
+    def tearDown(self):
+        b.ADMIN_USER_IDS = self.old_admin_user_ids
+        b.ADMIN_PHONES = self.old_admin_phones
 
     def signed_contact_update(self, user_id=1, phone="+7 932 058-81-50"):
         vcf_info = f"BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=cell:{phone}\r\nFN:Admin\r\nEND:VCARD\r\n"

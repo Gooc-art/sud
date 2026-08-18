@@ -42,7 +42,7 @@ STATE_FILE = Path(os.environ.get("SUD_MAX_STATE_FILE", "~/.config/sud/max-bot-st
 ADMIN_USER_IDS = {int(user_id) for user_id in os.environ.get("SUD_ADMIN_USER_IDS", "").replace(",", " ").split()}
 ADMIN_PHONES = {
     phone
-    for phone in (normalize_phone(raw) for raw in os.environ.get("SUD_ADMIN_PHONES", "79320588150").replace(",", " ").split())
+    for phone in (normalize_phone(raw) for raw in os.environ.get("SUD_ADMIN_PHONES", "").replace(",", " ").split())
     if phone
 }
 COMMERCE_PASSWORD = os.environ.get("SUD_COMMERCE_PASSWORD", "")
