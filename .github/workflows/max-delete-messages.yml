@@ -1,0 +1,37 @@
+name: max-delete-messages
+
+on:
+  workflow_dispatch:
+    inputs:
+      message_ids:
+        description: "Message ids to delete, separated by spaces, commas, or newlines"
+        required: true
+
+jobs:
+  delete:
+    runs-on: self-hosted
+    steps:
+      - name: Delete MAX messages
+        env:
+          MAX_TOKEN: ${{ secrets.MAX_TOKEN }}
+          MAX_API_BASE: https://platform-api2.max.ru
+          MESSAGE_IDS: ${{ inputs.message_ids }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          import urllib.parse
+          import urllib.request
+
+          token = os.environ["MAX_TOKEN"]
+          api_base = os.environ.get("MAX_API_BASE", "https://platform-api2.max.ru")
+          ids = [mid for mid in re.split(r"[\s,]+", os.environ["MESSAGE_IDS"].strip()) if mid]
+          for mid in ids:
+              url = api_base + "/messages?" + urllib.parse.urlencode({"message_id": mid})
+              req = urllib.request.Request(url, method="DELETE", headers={"Authorization": token})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      print(mid, resp.status, resp.read().decode(errors="replace")[:300])
+              except Exception as exc:
+                  print(mid, "ERROR", exc)
+          PY
