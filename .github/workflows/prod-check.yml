@@ -20,5 +20,7 @@ jobs:
           fi
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
-          systemctl --user is-active sud-max-bot.service
+          systemctl --user is-active sud-max-bot.service || true
           systemctl --user show sud-max-bot.service -p MainPID -p ExecMainStartTimestamp --no-pager
+          systemctl --user status sud-max-bot.service --no-pager || true
+          journalctl --user -u sud-max-bot.service -n 80 --no-pager || true
