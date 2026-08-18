@@ -353,6 +353,18 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.sessions["42"].step, "commerce_password")
         self.assertEqual(shown[-1], "Неверный пароль. Введите пароль еще раз.")
 
+    def test_commerce_password_blocks_stale_period_buttons(self):
+        b.sessions.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "commerce", "cb1")
+                    b.handle({"user_id": 42}, "", "period_current", "cb2")
+
+        self.assertEqual(b.sessions["42"].step, "commerce_password")
+        self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -367,6 +367,11 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "") ->
     sess = sessions.setdefault(key, Session())
     action = payload or text
 
+    if sess.step == "commerce_password" and payload and action not in {"main", "cancel"}:
+        show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()])
+        ack_callback(callback_id)
+        return
+
     if action in {"/start", "start", "Старт", "main"}:
         sess.step = ""
         show_menu(target, "Бот делает выгрузку судебных дел ЯНАО в Excel/PDF/CSV.", main_buttons())
