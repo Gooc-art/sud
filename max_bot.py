@@ -38,6 +38,7 @@ MAX_DAYS = int(os.environ.get("SUD_MAX_DAYS", "45"))
 EXPORT_TIMEOUT_SECONDS = int(os.environ.get("SUD_EXPORT_TIMEOUT_SECONDS", str(4 * 60 * 60)))
 HTTP_TIMEOUT_SECONDS = int(os.environ.get("SUD_HTTP_TIMEOUT_SECONDS", "20"))
 WEEKLY_CHAT_ID_FILE = Path(os.environ.get("SUD_WEEKLY_CHAT_ID_FILE", "~/.config/sud/weekly-chat-id")).expanduser()
+STATE_FILE = Path(os.environ.get("SUD_MAX_STATE_FILE", "~/.config/sud/max-bot-state.json")).expanduser()
 ADMIN_USER_IDS = {int(user_id) for user_id in os.environ.get("SUD_ADMIN_USER_IDS", "").replace(",", " ").split()}
 ADMIN_PHONES = {
     phone
@@ -77,6 +78,31 @@ jobs: dict[str, Job] = {}
 job_queue: queue.Queue[Job] = queue.Queue()
 commerce_password_pending: set[str] = set()
 verified_admin_keys: set[str] = set()
+
+
+def load_state() -> None:
+    try:
+        data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    for key, message_id_value in (data.get("menu_message_ids") or {}).items():
+        if message_id_value:
+            sessions.setdefault(str(key), Session()).menu_message_id = str(message_id_value)
+    verified_admin_keys.update(str(key) for key in data.get("verified_admin_keys") or [] if key)
+
+
+def save_state() -> None:
+    try:
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "menu_message_ids": {key: sess.menu_message_id for key, sess in sessions.items() if sess.menu_message_id},
+            "verified_admin_keys": sorted(verified_admin_keys),
+        }
+        tmp = STATE_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+        tmp.replace(STATE_FILE)
+    except Exception:
+        pass
 
 
 def request(method: str, path: str, params: dict | None = None, body: dict | None = None) -> dict:
@@ -328,12 +354,15 @@ def show_screen(target: dict, text: str, attachments: list[dict] | None = None) 
             if response.get("success") is False:
                 raise RuntimeError(response.get("message") or "screen edit failed")
             time.sleep(0.55)
+            save_state()
             return
         except Exception:
             sess.menu_message_id = None
+            save_state()
     response = request("POST", "/messages", target_params(target), body)
     time.sleep(0.55)
     sess.menu_message_id = message_id(response)
+    save_state()
 
 
 def rows_count(csv_path: Path) -> int:
@@ -477,6 +506,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
             delete_message(source_message_id)
             if sess.menu_message_id == source_message_id:
                 sess.menu_message_id = None
+                save_state()
         except Exception as exc:
             print(f"delete callback source error: {exc}", file=sys.stderr)
     if contact_phone:
@@ -484,6 +514,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
         notify_admins_about_contact(target, normalize_phone(contact_phone), granted)
         if granted and target.get("user_id"):
             verified_admin_keys.add(user_only_key(target))
+            save_state()
             show_menu(private_target(target), "Доступ подтвержден.", main_buttons())
             ack_callback(callback_id)
             return
@@ -649,6 +680,7 @@ def main() -> int:
     args = parser.parse_args()
     if not args.poll:
         parser.error("use --poll")
+    load_state()
     threading.Thread(target=worker, daemon=True).start()
     poll()
     return 0

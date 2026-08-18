@@ -529,6 +529,22 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(calls[0][3]["attachments"][0]["payload"]["buttons"][0][0]["type"], "request_contact")
         self.assertEqual(b.sessions["1"].menu_message_id, "auth-1")
 
+    def test_screen_state_survives_restart(self):
+        b.sessions.clear()
+        b.verified_admin_keys.clear()
+        with tempfile.TemporaryDirectory() as tmp:
+            state_file = b.Path(tmp) / "state.json"
+            with mock.patch.object(b, "STATE_FILE", state_file):
+                b.sessions["1"] = b.Session(menu_message_id="screen-1")
+                b.verified_admin_keys.add("1")
+                b.save_state()
+                b.sessions.clear()
+                b.verified_admin_keys.clear()
+                b.load_state()
+
+        self.assertEqual(b.sessions["1"].menu_message_id, "screen-1")
+        self.assertIn("1", b.verified_admin_keys)
+
     def test_contact_success_replaces_auth_screen_with_menu(self):
         b.sessions.clear()
         calls = []
