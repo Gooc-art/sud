@@ -12,10 +12,14 @@ SUD_MAX_DAYS=45
 SUD_EXPORT_TIMEOUT_SECONDS=14400
 SUD_HTTP_TIMEOUT_SECONDS=20
 SUD_ADMIN_USER_IDS=6393482
+SUD_COMMERCE_PASSWORD=
 EOF
   chmod 600 "$env_file"
 elif ! grep -q '^SUD_ADMIN_USER_IDS=' "$env_file"; then
   printf '\nSUD_ADMIN_USER_IDS=6393482\n' >> "$env_file"
+fi
+if ! grep -q '^SUD_COMMERCE_PASSWORD=' "$env_file"; then
+  printf '\nSUD_COMMERCE_PASSWORD=\n' >> "$env_file"
 fi
 
 cat > "$HOME/.config/systemd/user/sud-max-bot.service" <<EOF

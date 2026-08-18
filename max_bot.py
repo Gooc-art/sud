@@ -28,6 +28,7 @@ EXPORT_TIMEOUT_SECONDS = int(os.environ.get("SUD_EXPORT_TIMEOUT_SECONDS", str(4 
 HTTP_TIMEOUT_SECONDS = int(os.environ.get("SUD_HTTP_TIMEOUT_SECONDS", "20"))
 WEEKLY_CHAT_ID_FILE = Path(os.environ.get("SUD_WEEKLY_CHAT_ID_FILE", "~/.config/sud/weekly-chat-id")).expanduser()
 ADMIN_USER_IDS = {int(user_id) for user_id in os.environ.get("SUD_ADMIN_USER_IDS", "").replace(",", " ").split()}
+COMMERCE_PASSWORD = os.environ.get("SUD_COMMERCE_PASSWORD", "")
 
 
 @dataclass
@@ -175,7 +176,7 @@ def upload_and_send_file(target: dict, path: Path, caption: str) -> None:
 
 
 def main_buttons() -> list[list[tuple[str, str]]]:
-    return [[("📊 Выгрузка за месяц", "month")], [("📅 Выбрать период", "period"), ("📌 Статус выгрузки", "status")], [("❌ Отмена", "cancel")]]
+    return [[("📊 Выгрузка за месяц", "month")], [("💼 Выгрузка по коммерции", "commerce")], [("📅 Выбрать период", "period"), ("📌 Статус выгрузки", "status")], [("❌ Отмена", "cancel")]]
 
 
 def nav_buttons(back: str = "main") -> list[tuple[str, str]]:
@@ -389,6 +390,12 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "") ->
         sess.court = None
         sess.step = "from"
         show_menu(target, "Введите дату начала в формате ДД.ММ.ГГГГ.", [nav_buttons("period")])
+    elif action == "commerce":
+        if not COMMERCE_PASSWORD:
+            show_menu(target, "Пароль коммерции не настроен.", main_buttons())
+        else:
+            sess.step = "commerce_password"
+            show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()])
     elif action == "status" or action == "/status":
         job = jobs.get(sess.last_job or "")
         if not job:
@@ -445,6 +452,12 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "") ->
         sess.date_to = parsed
         sess.step = "period_court"
         show_menu(target, "Выберите суд.", court_buttons("court"))
+    elif sess.step == "commerce_password":
+        if text == COMMERCE_PASSWORD:
+            sess.step = "period"
+            show_menu(target, "Выберите период выгрузки по коммерции.", period_buttons())
+        else:
+            show_menu(target, "Неверный пароль. Введите пароль еще раз.", [nav_buttons()])
     else:
         show_menu(target, "Выберите действие.", main_buttons())
     try:

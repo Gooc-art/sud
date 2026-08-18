@@ -14,7 +14,7 @@ jobs:
       - name: Configure env
         run: |
           mkdir -p "$HOME/.config/sud"
-          printf 'MAX_TOKEN=%s\nMAX_API_BASE=https://platform-api2.max.ru\nSUD_MAX_DAYS=45\nSUD_EXPORT_TIMEOUT_SECONDS=14400\nSUD_HTTP_TIMEOUT_SECONDS=20\nSUD_ADMIN_USER_IDS=6393482\n' '${{ secrets.MAX_TOKEN }}' > "$HOME/.config/sud/max-bot.env"
+          printf 'MAX_TOKEN=%s\nMAX_API_BASE=https://platform-api2.max.ru\nSUD_MAX_DAYS=45\nSUD_EXPORT_TIMEOUT_SECONDS=14400\nSUD_HTTP_TIMEOUT_SECONDS=20\nSUD_ADMIN_USER_IDS=6393482\nSUD_COMMERCE_PASSWORD=%s\n' '${{ secrets.MAX_TOKEN }}' '${{ secrets.SUD_COMMERCE_PASSWORD }}' > "$HOME/.config/sud/max-bot.env"
           chmod 600 "$HOME/.config/sud/max-bot.env"
       - name: Install and restart bot
         run: |
