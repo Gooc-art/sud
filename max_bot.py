@@ -78,7 +78,7 @@ sessions: dict[str, Session] = {}
 jobs: dict[str, Job] = {}
 job_queue: queue.Queue[Job] = queue.Queue()
 commerce_password_pending: set[str] = set()
-verified_admin_keys: set[str] = set()
+verified_admin_phones: dict[str, str] = {}
 
 
 def load_state() -> None:
@@ -92,7 +92,13 @@ def load_state() -> None:
             sess = sessions.setdefault(str(key), Session())
             sess.menu_message_id = str(message_id_value)
             sess.screen_type = str(screen_types.get(key) or "")
-    verified_admin_keys.update(str(key) for key in data.get("verified_admin_keys") or [] if key)
+    verified_admin_phones.update(
+        {
+            str(key): normalize_phone(str(phone))
+            for key, phone in (data.get("verified_admin_phones") or {}).items()
+            if normalize_phone(str(phone)) in ADMIN_PHONES
+        }
+    )
 
 
 def save_state() -> None:
@@ -101,7 +107,7 @@ def save_state() -> None:
         data = {
             "menu_message_ids": {key: sess.menu_message_id for key, sess in sessions.items() if sess.menu_message_id},
             "screen_types": {key: sess.screen_type for key, sess in sessions.items() if sess.menu_message_id and sess.screen_type},
-            "verified_admin_keys": sorted(verified_admin_keys),
+            "verified_admin_phones": dict(sorted(verified_admin_phones.items())),
         }
         tmp = STATE_FILE.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
@@ -308,11 +314,26 @@ def private_target(target: dict) -> dict:
 
 def is_admin(target: dict) -> bool:
     user_id = target.get("user_id")
-    return (
-        not ADMIN_USER_IDS
-        or (user_id is not None and int(user_id) in ADMIN_USER_IDS)
-        or user_only_key(target) in verified_admin_keys
-    )
+    if user_id is None:
+        return False
+    key = str(user_id)
+    return int(user_id) in ADMIN_USER_IDS or normalize_phone(verified_admin_phones.get(key, "")) in ADMIN_PHONES
+
+
+def prune_non_admin_screens() -> None:
+    changed = False
+    for key, sess in list(sessions.items()):
+        if not sess.menu_message_id or sess.screen_type == "auth" or is_admin({"user_id": key}):
+            continue
+        try:
+            delete_message(sess.menu_message_id)
+            sess.menu_message_id = None
+            sess.screen_type = ""
+            changed = True
+        except Exception as exc:
+            print(f"delete non-admin screen error: {exc}", file=sys.stderr)
+    if changed:
+        save_state()
 
 
 def verified_contact_phone(message: dict) -> str:
@@ -529,7 +550,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
         granted = normalize_phone(contact_phone) in ADMIN_PHONES
         notify_admins_about_contact(target, normalize_phone(contact_phone), granted)
         if granted and target.get("user_id"):
-            verified_admin_keys.add(user_only_key(target))
+            verified_admin_phones[user_only_key(target)] = normalize_phone(contact_phone)
             save_state()
             show_menu(private_target(target), "Доступ подтвержден.", main_buttons())
             ack_callback(callback_id)
@@ -697,6 +718,8 @@ def main() -> int:
     if not args.poll:
         parser.error("use --poll")
     load_state()
+    prune_non_admin_screens()
+    save_state()
     threading.Thread(target=worker, daemon=True).start()
     poll()
     return 0

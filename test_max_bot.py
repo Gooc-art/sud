@@ -11,7 +11,8 @@ import max_bot as b
 class MaxBotTest(unittest.TestCase):
     def setUp(self):
         b.commerce_password_pending.clear()
-        b.verified_admin_keys.clear()
+        b.verified_admin_phones.clear()
+        b.verified_admin_phones["42"] = "79320588150"
 
     def signed_contact_update(self, user_id=1, phone="+7 932 058-81-50"):
         vcf_info = f"BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=cell:{phone}\r\nFN:Admin\r\nEND:VCARD\r\n"
@@ -531,20 +532,36 @@ class MaxBotTest(unittest.TestCase):
 
     def test_screen_state_survives_restart(self):
         b.sessions.clear()
-        b.verified_admin_keys.clear()
+        b.verified_admin_phones.clear()
         with tempfile.TemporaryDirectory() as tmp:
             state_file = b.Path(tmp) / "state.json"
             with mock.patch.object(b, "STATE_FILE", state_file):
                 b.sessions["1"] = b.Session(menu_message_id="screen-1", screen_type="auth")
-                b.verified_admin_keys.add("1")
+                b.verified_admin_phones["1"] = "79320588150"
                 b.save_state()
                 b.sessions.clear()
-                b.verified_admin_keys.clear()
+                b.verified_admin_phones.clear()
                 b.load_state()
 
         self.assertEqual(b.sessions["1"].menu_message_id, "screen-1")
         self.assertEqual(b.sessions["1"].screen_type, "auth")
-        self.assertIn("1", b.verified_admin_keys)
+        self.assertIn("1", b.verified_admin_phones)
+
+    def test_legacy_verified_key_does_not_make_user_admin(self):
+        b.sessions.clear()
+        b.verified_admin_phones.clear()
+        with tempfile.TemporaryDirectory() as tmp:
+            state_file = b.Path(tmp) / "state.json"
+            state_file.write_text(
+                b.json.dumps({"verified_admin_keys": ["23325864"], "verified_admin_phones": {"1": "79320588150"}}),
+                encoding="utf-8",
+            )
+            with mock.patch.object(b, "STATE_FILE", state_file):
+                with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+                    with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                        b.load_state()
+                        self.assertFalse(b.is_admin({"user_id": 23325864}))
+                        self.assertTrue(b.is_admin({"user_id": 1}))
 
     def test_contact_success_replaces_auth_screen_with_menu(self):
         b.sessions.clear()
@@ -616,7 +633,7 @@ class MaxBotTest(unittest.TestCase):
                             b.handle(target, text, payload, callback_id, source_message_id, contact_phone)
 
         self.assertEqual(contact_phone, "79320588150")
-        self.assertIn("1", b.verified_admin_keys)
+        self.assertIn("1", b.verified_admin_phones)
         show_menu.assert_called_once()
         send_text.assert_called_once()
         self.assertEqual(send_text.call_args.args[0], {"user_id": 6393482})
@@ -631,6 +648,51 @@ class MaxBotTest(unittest.TestCase):
 
             self.assertTrue(b.is_admin({"user_id": 1}))
             self.assertFalse(b.is_admin({"chat_id": 7}))
+
+    def test_non_admin_user_and_phone_do_not_open_menu(self):
+        target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
+            self.signed_contact_update(user_id=23325864, phone="+7 912 911-11-19")
+        )
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                with mock.patch.object(b, "show_menu") as show_menu:
+                    with mock.patch.object(b, "send_auth_request") as send_auth_request:
+                        with mock.patch.object(b, "notify_admins_about_contact") as notify:
+                            with mock.patch.object(b, "ack_callback"):
+                                b.handle(target, text, payload, callback_id, source_message_id, contact_phone)
+                self.assertFalse(b.is_admin({"user_id": 23325864}))
+
+        self.assertEqual(contact_phone, "79129111119")
+        show_menu.assert_not_called()
+        send_auth_request.assert_called_once_with({"user_id": 23325864})
+        notify.assert_called_once_with({"user_id": 23325864}, "79129111119", False)
+
+    def test_empty_admin_ids_do_not_make_user_admin(self):
+        b.verified_admin_phones.clear()
+        with mock.patch.object(b, "ADMIN_USER_IDS", set()):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                self.assertFalse(b.is_admin({"user_id": 23325864}))
+
+    def test_stale_verified_phone_not_in_admin_phones_does_not_open_menu(self):
+        b.verified_admin_phones.clear()
+        b.verified_admin_phones["23325864"] = "79129111119"
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                self.assertFalse(b.is_admin({"user_id": 23325864}))
+
+    def test_startup_prunes_saved_menu_for_non_admin(self):
+        b.sessions.clear()
+        b.sessions["23325864"] = b.Session(menu_message_id="menu-1", screen_type="menu")
+        calls = []
+
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                with mock.patch.object(b, "delete_message", side_effect=lambda message_id: calls.append(message_id)):
+                    b.prune_non_admin_screens()
+
+        self.assertEqual(calls, ["menu-1"])
+        self.assertIsNone(b.sessions["23325864"].menu_message_id)
+        self.assertEqual(b.sessions["23325864"].screen_type, "")
 
     def test_verified_contact_can_open_menu_next_time(self):
         with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
@@ -757,18 +819,19 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.sessions["42"].step, "commerce_password")
         self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
 
-    def test_commerce_password_survives_callback_target_shape_drift_to_chat_only(self):
+    def test_commerce_password_does_not_survive_to_chat_only_target(self):
         b.sessions.clear()
         b.commerce_password_pending.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
-            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
-                with mock.patch.object(b, "ack_callback"):
-                    b.handle({"user_id": 42, "chat_id": 7}, "", "commerce", "cb1")
-                    b.handle({"chat_id": 7}, "", "week", "cb2")
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons=None, *_args: shown.append(text)):
+                with mock.patch.object(b, "send_auth_request", side_effect=lambda _target: shown.append("auth")):
+                    with mock.patch.object(b, "ack_callback"):
+                        b.handle({"user_id": 42, "chat_id": 7}, "", "commerce", "cb1")
+                        b.handle({"chat_id": 7}, "", "week", "cb2")
 
-        self.assertEqual(b.sessions["7"].step, "commerce_password")
-        self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
+        self.assertEqual(b.sessions["42"].step, "commerce_password")
+        self.assertEqual(shown[-1], "auth")
 
     def test_commerce_password_text_wins_over_reserved_actions(self):
         b.sessions.clear()
