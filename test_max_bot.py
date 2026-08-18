@@ -57,6 +57,9 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.message_id({"message": {"body": {"mid": "m1"}}}), "m1")
         self.assertEqual(b.message_id({"body": {"mid": "m2"}}), "m2")
 
+    def test_control_screen_prefers_user_id_over_chat_id(self):
+        self.assertEqual(b.target_params({"chat_id": 777, "user_id": 23325864}), {"user_id": 23325864})
+
     def test_show_menu_falls_back_when_edit_is_rejected(self):
         b.sessions.clear()
         b.sessions["42"] = b.Session(menu_message_id="old")
@@ -135,6 +138,28 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(source_message_id, "msg1")
         self.assertEqual(contact_phone, "")
 
+    def test_extract_nested_message_callback_uses_event_user_not_bot_sender(self):
+        target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
+            {
+                "update_type": "message_callback",
+                "message_callback": {
+                    "user": {"user_id": 23325864},
+                    "callback": {"callback_id": "cb1", "payload": "commerce"},
+                    "message": {
+                        "sender": {"user_id": 6393482, "is_bot": True},
+                        "recipient": {"chat_id": 777},
+                        "body": {"text": "old", "mid": "old-menu"},
+                    },
+                },
+            }
+        )
+
+        self.assertEqual(target, {"chat_id": 777, "user_id": 23325864})
+        self.assertEqual(payload, "commerce")
+        self.assertEqual(callback_id, "cb1")
+        self.assertEqual(source_message_id, "old-menu")
+        self.assertEqual(contact_phone, "")
+
     def test_extract_callback_prefers_clicking_user_over_bot_sender(self):
         target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
             {
@@ -153,6 +178,23 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(payload, "week")
         self.assertEqual(callback_id, "cb1")
         self.assertEqual(source_message_id, "")
+        self.assertEqual(contact_phone, "")
+
+    def test_bot_sender_is_never_treated_as_clicking_user(self):
+        target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
+            {
+                "update_type": "message_callback",
+                "message_callback": {
+                    "callback": {"callback_id": "cb1", "payload": "commerce"},
+                    "message": {"sender": {"user_id": 6393482, "is_bot": True}, "body": {"mid": "old-menu"}},
+                },
+            }
+        )
+
+        self.assertEqual(target, {})
+        self.assertEqual(payload, "commerce")
+        self.assertEqual(callback_id, "cb1")
+        self.assertEqual(source_message_id, "old-menu")
         self.assertEqual(contact_phone, "")
 
     def test_extract_bot_started_as_start(self):
@@ -674,6 +716,41 @@ class MaxBotTest(unittest.TestCase):
         show_menu.assert_not_called()
         send_auth_request.assert_called_once_with({"user_id": 23325864})
         notify.assert_called_once_with({"user_id": 23325864}, "79129111119", False)
+
+    def test_non_admin_nested_callback_cannot_open_commerce_from_old_menu(self):
+        b.sessions.clear()
+        update = {
+            "update_type": "message_callback",
+            "message_callback": {
+                "user": {"user_id": 23325864},
+                "callback": {"callback_id": "cb1", "payload": "commerce"},
+                "message": {
+                    "sender": {"user_id": 6393482, "is_bot": True},
+                    "recipient": {"chat_id": 777},
+                    "body": {"text": "old", "mid": "old-menu"},
+                },
+            },
+        }
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params, body))
+            if method == "POST":
+                return {"message": {"body": {"mid": "auth-1"}}}
+            return {"success": True}
+
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+                    with mock.patch.object(b, "request", side_effect=fake_request):
+                        with mock.patch.object(b, "ack_callback"):
+                            with mock.patch.object(b.time, "sleep"):
+                                b.handle(*b.extract_event(update))
+
+        self.assertEqual(calls[0][0:3], ("DELETE", "/messages", {"message_id": "old-menu"}))
+        self.assertEqual(calls[1][0:3], ("POST", "/messages", {"user_id": 23325864}))
+        self.assertIn("Поделитесь номером", calls[1][3]["text"])
+        self.assertNotIn("Выгрузка", calls[1][3]["text"])
 
     def test_empty_admin_ids_do_not_make_user_admin(self):
         b.verified_admin_phones.clear()

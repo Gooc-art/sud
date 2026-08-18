@@ -171,9 +171,9 @@ def multipart_upload(url: str, path: Path) -> dict:
 
 
 def target_params(target: dict) -> dict:
-    if target.get("chat_id"):
-        return {"chat_id": target["chat_id"]}
-    return {"user_id": target["user_id"]}
+    if target.get("user_id"):
+        return {"user_id": target["user_id"]}
+    return {"chat_id": target["chat_id"]}
 
 
 def keyboard(rows: list[list[tuple[str, str]]]) -> dict:
@@ -538,7 +538,10 @@ def extract_event(update: dict) -> tuple[dict, str, str, str, str, str]:
         or ""
     )
     chat = message.get("chat") or message.get("recipient") or callback.get("chat") or {}
-    user = callback.get("user") or update.get("user") or message.get("sender") or message.get("user") or {}
+    sender = message.get("sender") or {}
+    user = callback.get("user") or event.get("user") or update.get("user") or message.get("user") or {}
+    if not user and not sender.get("is_bot"):
+        user = sender
     target = {}
     chat_id = chat.get("chat_id") or message.get("chat_id") or callback.get("chat_id") or update.get("chat_id")
     user_id = user.get("user_id") or message.get("user_id") or callback.get("user_id") or update.get("user_id")
