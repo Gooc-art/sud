@@ -286,7 +286,7 @@ class MaxBotTest(unittest.TestCase):
     def test_stale_court_button_without_period_asks_for_period(self):
         b.sessions.clear()
         shown = []
-        with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+        with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
             with mock.patch.object(b, "ack_callback") as ack:
                 b.handle({"user_id": 42}, "", "court:all", "cb1")
 
@@ -297,7 +297,7 @@ class MaxBotTest(unittest.TestCase):
     def test_stale_confirm_button_without_period_does_not_start_job(self):
         b.sessions.clear()
         shown = []
-        with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+        with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
             with mock.patch.object(b, "ack_callback") as ack:
                 with mock.patch.object(b, "start_job") as start_job:
                     b.handle({"user_id": 42}, "", "run_confirm", "cb1")
@@ -535,7 +535,7 @@ class MaxBotTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             state_file = b.Path(tmp) / "state.json"
             with mock.patch.object(b, "STATE_FILE", state_file):
-                b.sessions["1"] = b.Session(menu_message_id="screen-1")
+                b.sessions["1"] = b.Session(menu_message_id="screen-1", screen_type="auth")
                 b.verified_admin_keys.add("1")
                 b.save_state()
                 b.sessions.clear()
@@ -543,6 +543,7 @@ class MaxBotTest(unittest.TestCase):
                 b.load_state()
 
         self.assertEqual(b.sessions["1"].menu_message_id, "screen-1")
+        self.assertEqual(b.sessions["1"].screen_type, "auth")
         self.assertIn("1", b.verified_admin_keys)
 
     def test_contact_success_replaces_auth_screen_with_menu(self):
@@ -564,9 +565,29 @@ class MaxBotTest(unittest.TestCase):
                             b.handle(*b.extract_event(self.signed_contact_update()))
 
         self.assertEqual(calls[0][0:3], ("POST", "/messages", {"user_id": 1}))
-        self.assertEqual(calls[-1][0:3], ("PUT", "/messages", {"message_id": "auth-1"}))
+        self.assertEqual(calls[-2][0:3], ("DELETE", "/messages", {"message_id": "auth-1"}))
+        self.assertEqual(calls[-1][0:3], ("POST", "/messages", {"user_id": 1}))
         self.assertIn("Доступ подтвержден", calls[-1][3]["text"])
-        self.assertEqual(b.sessions["1"].menu_message_id, "auth-1")
+
+    def test_screen_type_change_deletes_previous_screen(self):
+        b.sessions.clear()
+        b.sessions["1"] = b.Session(menu_message_id="auth-1", screen_type="auth")
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params, body))
+            if method == "POST":
+                return {"message": {"body": {"mid": "menu-1"}}}
+            return {"success": True}
+
+        with mock.patch.object(b, "request", side_effect=fake_request):
+            with mock.patch.object(b.time, "sleep"):
+                b.show_menu({"user_id": 1}, "Доступ подтвержден.", b.main_buttons())
+
+        self.assertEqual(calls[0][0:3], ("DELETE", "/messages", {"message_id": "auth-1"}))
+        self.assertEqual(calls[1][0:3], ("POST", "/messages", {"user_id": 1}))
+        self.assertEqual(b.sessions["1"].menu_message_id, "menu-1")
+        self.assertEqual(b.sessions["1"].screen_type, "menu")
 
     def test_auth_request_without_user_id_has_no_contact_button(self):
         b.sessions.clear()
@@ -638,7 +659,7 @@ class MaxBotTest(unittest.TestCase):
         b.sessions.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
-            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
                 with mock.patch.object(b, "ack_callback"):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "secret")
@@ -669,7 +690,7 @@ class MaxBotTest(unittest.TestCase):
         b.sessions.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
-            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
                 with mock.patch.object(b, "ack_callback"):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "wrong")
@@ -701,7 +722,7 @@ class MaxBotTest(unittest.TestCase):
         b.commerce_password_pending.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
-            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
                 with mock.patch.object(b, "ack_callback"):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "", "period_current", "cb2")
@@ -714,7 +735,7 @@ class MaxBotTest(unittest.TestCase):
         b.commerce_password_pending.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
-            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
                 with mock.patch.object(b, "ack_callback"):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     for command in ("/period", "/month", "/week"):
@@ -728,7 +749,7 @@ class MaxBotTest(unittest.TestCase):
         b.commerce_password_pending.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
-            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
                 with mock.patch.object(b, "ack_callback"):
                     b.handle({"chat_id": 7, "user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "", "week", "cb2")
@@ -741,7 +762,7 @@ class MaxBotTest(unittest.TestCase):
         b.commerce_password_pending.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
-            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
                 with mock.patch.object(b, "ack_callback"):
                     b.handle({"user_id": 42, "chat_id": 7}, "", "commerce", "cb1")
                     b.handle({"chat_id": 7}, "", "week", "cb2")
@@ -753,7 +774,7 @@ class MaxBotTest(unittest.TestCase):
         b.sessions.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "week"):
-            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
                 with mock.patch.object(b, "ack_callback"):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "week")

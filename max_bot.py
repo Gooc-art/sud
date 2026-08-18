@@ -57,6 +57,7 @@ class Session:
     court: str | None = None
     last_job: str | None = None
     menu_message_id: str | None = None
+    screen_type: str = ""
 
 
 @dataclass
@@ -85,9 +86,12 @@ def load_state() -> None:
         data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
     except Exception:
         return
+    screen_types = data.get("screen_types") or {}
     for key, message_id_value in (data.get("menu_message_ids") or {}).items():
         if message_id_value:
-            sessions.setdefault(str(key), Session()).menu_message_id = str(message_id_value)
+            sess = sessions.setdefault(str(key), Session())
+            sess.menu_message_id = str(message_id_value)
+            sess.screen_type = str(screen_types.get(key) or "")
     verified_admin_keys.update(str(key) for key in data.get("verified_admin_keys") or [] if key)
 
 
@@ -96,6 +100,7 @@ def save_state() -> None:
         STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
         data = {
             "menu_message_ids": {key: sess.menu_message_id for key, sess in sessions.items() if sess.menu_message_id},
+            "screen_types": {key: sess.screen_type for key, sess in sessions.items() if sess.menu_message_id and sess.screen_type},
             "verified_admin_keys": sorted(verified_admin_keys),
         }
         tmp = STATE_FILE.with_suffix(".tmp")
@@ -184,13 +189,13 @@ def send_text(target: dict, text: str, buttons: list[list[tuple[str, str]]] | No
 
 def send_auth_request(target: dict) -> None:
     if target.get("user_id"):
-        show_screen(private_target(target), "Нет доступа. Поделитесь номером для входа.", [contact_keyboard()])
+        show_screen(private_target(target), "Нет доступа. Поделитесь номером для входа.", [contact_keyboard()], "auth")
     else:
-        show_screen(target, "Откройте бота в личке для авторизации.")
+        show_screen(target, "Откройте бота в личке для авторизации.", screen_type="auth")
 
 
-def show_menu(target: dict, text: str, buttons: list[list[tuple[str, str]]]) -> None:
-    show_screen(target, text, [keyboard(buttons)])
+def show_menu(target: dict, text: str, buttons: list[list[tuple[str, str]]], screen_type: str = "menu") -> None:
+    show_screen(target, text, [keyboard(buttons)], screen_type)
 
 
 def answer_callback(callback_id: str, text: str = "") -> None:
@@ -343,25 +348,36 @@ def notify_admins_about_contact(target: dict, phone: str, granted: bool) -> None
             print(f"admin contact notify error: {exc}", file=sys.stderr)
 
 
-def show_screen(target: dict, text: str, attachments: list[dict] | None = None) -> None:
+def show_screen(target: dict, text: str, attachments: list[dict] | None = None, screen_type: str = "menu") -> None:
     sess = sessions.setdefault(session_key(target), Session())
     body = {"text": text[:4000]}
     if attachments:
         body["attachments"] = attachments
+    if sess.menu_message_id and sess.screen_type and sess.screen_type != screen_type:
+        try:
+            delete_message(sess.menu_message_id)
+        except Exception as exc:
+            print(f"delete previous screen error: {exc}", file=sys.stderr)
+        sess.menu_message_id = None
+        sess.screen_type = ""
+        save_state()
     if sess.menu_message_id:
         try:
             response = request("PUT", "/messages", {"message_id": sess.menu_message_id}, body)
             if response.get("success") is False:
                 raise RuntimeError(response.get("message") or "screen edit failed")
             time.sleep(0.55)
+            sess.screen_type = screen_type
             save_state()
             return
         except Exception:
             sess.menu_message_id = None
+            sess.screen_type = ""
             save_state()
     response = request("POST", "/messages", target_params(target), body)
     time.sleep(0.55)
     sess.menu_message_id = message_id(response)
+    sess.screen_type = screen_type if sess.menu_message_id else ""
     save_state()
 
 
@@ -542,7 +558,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
         if action != "commerce":
             sess.step = "commerce_password"
             text = "Введите пароль для выгрузки по коммерции." if payload or action.startswith("/") else "Неверный пароль. Введите пароль еще раз."
-            show_menu(target, text, [nav_buttons()])
+            show_menu(target, text, [nav_buttons()], "commerce_password")
             ack_callback(callback_id)
             return
 
@@ -581,7 +597,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
             sess.date_to = None
             sess.court = None
             sess.step = "commerce_password"
-            show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()])
+            show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()], "commerce_password")
     elif action == "status" or action == "/status":
         job = jobs.get(sess.last_job or "")
         if not job:
@@ -645,7 +661,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
             sess.step = "period"
             show_menu(target, "Выберите период выгрузки по коммерции.", period_buttons())
         else:
-            show_menu(target, "Неверный пароль. Введите пароль еще раз.", [nav_buttons()])
+            show_menu(target, "Неверный пароль. Введите пароль еще раз.", [nav_buttons()], "commerce_password")
     else:
         show_menu(target, "Выберите действие.", main_buttons())
     try:
