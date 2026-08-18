@@ -1,4 +1,6 @@
 import datetime as dt
+import hashlib
+import hmac
 import unittest
 from unittest import mock
 
@@ -8,6 +10,8 @@ import max_bot as b
 class MaxBotTest(unittest.TestCase):
     def setUp(self):
         b.commerce_password_pending.clear()
+        if hasattr(b, "verified_admin_keys"):
+            b.verified_admin_keys.clear()
 
     def test_last_full_week(self):
         self.assertEqual(b.last_full_week(dt.date(2026, 7, 29)), (dt.date(2026, 7, 20), dt.date(2026, 7, 26)))
@@ -72,7 +76,7 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.sessions["42"].step, "running")
 
     def test_extract_callback_target_from_recipient(self):
-        target, text, payload, callback_id = b.extract_event(
+        target, text, payload, callback_id, _source_message_id, _contact_phone = b.extract_event(
             {
                 "update_type": "message_callback",
                 "callback": {"callback_id": "cb1", "payload": "week", "user": {"user_id": 42}},
@@ -86,7 +90,7 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(callback_id, "cb1")
 
     def test_extract_nested_message_callback(self):
-        target, text, payload, callback_id = b.extract_event(
+        target, text, payload, callback_id, _source_message_id, _contact_phone = b.extract_event(
             {
                 "update_type": "message_callback",
                 "message_callback": {
@@ -102,7 +106,7 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(callback_id, "cb1")
 
     def test_extract_callback_prefers_clicking_user_over_bot_sender(self):
-        target, text, payload, callback_id = b.extract_event(
+        target, text, payload, callback_id, _source_message_id, _contact_phone = b.extract_event(
             {
                 "update_type": "message_callback",
                 "callback": {"callback_id": "cb1", "payload": "week", "user": {"user_id": 42}},
@@ -120,7 +124,7 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(callback_id, "cb1")
 
     def test_extract_bot_started_as_start(self):
-        target, text, payload, callback_id = b.extract_event(
+        target, text, payload, callback_id, _source_message_id, _contact_phone = b.extract_event(
             {"update_type": "bot_started", "chat_id": 7, "user": {"user_id": 42}}
         )
 
@@ -332,14 +336,72 @@ class MaxBotTest(unittest.TestCase):
 
     def test_non_admin_gets_no_access(self):
         with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
-            with mock.patch.object(b, "send_text") as send_text:
+            with mock.patch.object(b, "send_auth_request") as send_auth_request:
                 with mock.patch.object(b, "show_menu") as show_menu:
                     with mock.patch.object(b, "ack_callback") as ack:
                         b.handle({"user_id": 1}, "/start", callback_id="cb1")
 
-        send_text.assert_called_once_with({"user_id": 1}, "Нет доступа.")
+        send_auth_request.assert_called_once_with({"user_id": 1})
         show_menu.assert_not_called()
         ack.assert_called_once_with("cb1")
+
+    def test_chat_only_start_requests_contact(self):
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "send_auth_request") as send_auth_request:
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"chat_id": 7}, "/start")
+
+        send_auth_request.assert_called_once_with({"chat_id": 7})
+
+    def test_denied_chat_stale_callback_does_not_open_export(self):
+        b.sessions.clear()
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "send_auth_request") as send_auth_request:
+                with mock.patch.object(b, "show_menu") as show_menu:
+                    with mock.patch.object(b, "ack_callback"):
+                        b.handle({"chat_id": 7}, "/start")
+                        b.handle({"chat_id": 7}, "", "week", "cb2")
+
+        self.assertEqual(send_auth_request.call_count, 2)
+        show_menu.assert_not_called()
+        self.assertNotIn("7", b.sessions)
+
+    def test_non_admin_callback_deletes_source_menu(self):
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "delete_message") as delete_message:
+                with mock.patch.object(b, "send_auth_request"):
+                    with mock.patch.object(b, "ack_callback"):
+                        b.handle({"user_id": 1}, "", "week", "cb1", "old")
+
+        delete_message.assert_called_once_with("old")
+
+    def test_contact_phone_authorizes_admin(self):
+        vcf_info = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=cell:+7 932 058-81-50\r\nFN:Admin\r\nEND:VCARD\r\n"
+        contact_hash = hmac.new(b.TOKEN.encode(), vcf_info.encode(), hashlib.sha256).hexdigest()
+
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
+                    {
+                        "message": {
+                            "user_id": 1,
+                            "body": {
+                                "attachments": [
+                                    {
+                                        "type": "contact",
+                                        "payload": {"vcf_info": vcf_info, "hash": contact_hash},
+                                    }
+                                ]
+                            },
+                        }
+                    }
+                )
+                with mock.patch.object(b, "show_menu") as show_menu:
+                    with mock.patch.object(b, "ack_callback"):
+                        b.handle(target, text, payload, callback_id, source_message_id, contact_phone)
+
+        self.assertIn("1", b.verified_admin_keys)
+        show_menu.assert_called_once()
 
     def test_admin_can_open_menu(self):
         with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):

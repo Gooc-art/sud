@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
 import json
 import mimetypes
 import os
@@ -21,6 +23,15 @@ from pathlib import Path
 from sud_export import COURTS
 
 
+def normalize_phone(phone: str) -> str:
+    digits = re.sub(r"\D", "", phone)
+    if len(digits) == 11 and digits.startswith("8"):
+        return "7" + digits[1:]
+    if len(digits) == 10:
+        return "7" + digits
+    return digits
+
+
 API_BASE = os.environ.get("MAX_API_BASE", "https://platform-api2.max.ru")
 TOKEN = os.environ.get("MAX_TOKEN", "")
 MAX_DAYS = int(os.environ.get("SUD_MAX_DAYS", "45"))
@@ -28,6 +39,11 @@ EXPORT_TIMEOUT_SECONDS = int(os.environ.get("SUD_EXPORT_TIMEOUT_SECONDS", str(4 
 HTTP_TIMEOUT_SECONDS = int(os.environ.get("SUD_HTTP_TIMEOUT_SECONDS", "20"))
 WEEKLY_CHAT_ID_FILE = Path(os.environ.get("SUD_WEEKLY_CHAT_ID_FILE", "~/.config/sud/weekly-chat-id")).expanduser()
 ADMIN_USER_IDS = {int(user_id) for user_id in os.environ.get("SUD_ADMIN_USER_IDS", "").replace(",", " ").split()}
+ADMIN_PHONES = {
+    phone
+    for phone in (normalize_phone(raw) for raw in os.environ.get("SUD_ADMIN_PHONES", "79320588150").replace(",", " ").split())
+    if phone
+}
 COMMERCE_PASSWORD = os.environ.get("SUD_COMMERCE_PASSWORD", "")
 
 
@@ -60,6 +76,7 @@ sessions: dict[str, Session] = {}
 jobs: dict[str, Job] = {}
 job_queue: queue.Queue[Job] = queue.Queue()
 commerce_password_pending: set[str] = set()
+verified_admin_keys: set[str] = set()
 
 
 def request(method: str, path: str, params: dict | None = None, body: dict | None = None) -> dict:
@@ -113,6 +130,13 @@ def keyboard(rows: list[list[tuple[str, str]]]) -> dict:
     }
 
 
+def contact_keyboard() -> dict:
+    return {
+        "type": "inline_keyboard",
+        "payload": {"buttons": [[{"type": "request_contact", "text": "Поделиться контактом"}]]},
+    }
+
+
 def message_id(response: dict) -> str | None:
     return (
         response.get("message_id")
@@ -130,6 +154,12 @@ def send_text(target: dict, text: str, buttons: list[list[tuple[str, str]]] | No
     response = request("POST", "/messages", target_params(target), body)
     time.sleep(0.55)
     return response
+
+
+def send_auth_request(target: dict) -> None:
+    body = {"text": "Нет доступа. Поделитесь контактом для входа.", "attachments": [contact_keyboard()]}
+    request("POST", "/messages", target_params(target), body)
+    time.sleep(0.55)
 
 
 def show_menu(target: dict, text: str, buttons: list[list[tuple[str, str]]]) -> None:
@@ -176,6 +206,11 @@ def upload_and_send_file(target: dict, path: Path, caption: str) -> None:
         except Exception:
             if delay == 4:
                 raise
+
+
+def delete_message(message_id: str) -> None:
+    if message_id:
+        request("DELETE", "/messages", {"message_id": message_id})
 
 
 def main_buttons() -> list[list[tuple[str, str]]]:
@@ -244,7 +279,29 @@ def target_keys(target: dict) -> set[str]:
 
 def is_admin(target: dict) -> bool:
     user_id = target.get("user_id")
-    return not ADMIN_USER_IDS or (user_id is not None and int(user_id) in ADMIN_USER_IDS)
+    return (
+        not ADMIN_USER_IDS
+        or (user_id is not None and int(user_id) in ADMIN_USER_IDS)
+        or bool(target_keys(target) & verified_admin_keys)
+    )
+
+
+def verified_contact_phone(message: dict) -> str:
+    for attachment in message.get("attachments") or (message.get("body") or {}).get("attachments") or []:
+        if attachment.get("type") != "contact":
+            continue
+        payload = attachment.get("payload") or {}
+        vcf_info = payload.get("vcf_info") or ""
+        contact_hash = payload.get("hash") or ""
+        if not vcf_info or not contact_hash:
+            return ""
+        normalized_vcf = vcf_info.replace("\\r\\n", "\r\n")
+        digest = hmac.new(TOKEN.encode(), normalized_vcf.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(digest, contact_hash):
+            return ""
+        match = re.search(r"TEL[^:]*:([+0-9 ()-]+)", normalized_vcf)
+        return normalize_phone(match.group(1)) if match else ""
+    return ""
 
 
 def rows_count(csv_path: Path) -> int:
@@ -345,7 +402,7 @@ def worker() -> None:
             job_queue.task_done()
 
 
-def extract_event(update: dict) -> tuple[dict, str, str, str]:
+def extract_event(update: dict) -> tuple[dict, str, str, str, str, str]:
     event = update.get("message_callback") or {}
     callback = update.get("callback") or event.get("callback") or event
     message = update.get("message") or event.get("message") or update.get("message_created", {}).get("message") or {}
@@ -353,6 +410,15 @@ def extract_event(update: dict) -> tuple[dict, str, str, str]:
     text = body.get("text") or message.get("text") or ("/start" if update.get("update_type") == "bot_started" else "")
     payload = callback.get("payload") or ""
     callback_id = callback.get("callback_id") or ""
+    source_message_id = (
+        body.get("mid")
+        or body.get("message_id")
+        or message.get("mid")
+        or message.get("message_id")
+        or callback.get("message_id")
+        or update.get("message_id")
+        or ""
+    )
     chat = message.get("chat") or message.get("recipient") or callback.get("chat") or {}
     user = callback.get("user") or update.get("user") or message.get("sender") or message.get("user") or {}
     target = {}
@@ -362,18 +428,30 @@ def extract_event(update: dict) -> tuple[dict, str, str, str]:
         target["chat_id"] = chat_id
     if user_id:
         target["user_id"] = user_id
-    return target, text.strip(), payload.strip(), callback_id
+    return target, text.strip(), payload.strip(), callback_id, str(source_message_id).strip(), verified_contact_phone(message)
 
 
-def handle(target: dict, text: str, payload: str = "", callback_id: str = "") -> None:
+def handle(target: dict, text: str, payload: str = "", callback_id: str = "", source_message_id: str = "", contact_phone: str = "") -> None:
     if not target.get("user_id") and not target.get("chat_id"):
         return
+    if callback_id and source_message_id:
+        try:
+            delete_message(source_message_id)
+        except Exception as exc:
+            print(f"delete callback source error: {exc}", file=sys.stderr)
+    if contact_phone and normalize_phone(contact_phone) in ADMIN_PHONES:
+        verified_admin_keys.update(target_keys(target))
+        show_menu(target, "Доступ подтвержден.", main_buttons())
+        ack_callback(callback_id)
+        return
     if not is_admin(target):
-        send_text(target, "Нет доступа.")
+        send_auth_request(target)
         ack_callback(callback_id)
         return
     key = session_key(target)
     sess = sessions.setdefault(key, Session())
+    if source_message_id and sess.menu_message_id == source_message_id:
+        sess.menu_message_id = None
     action = payload or text
     commerce_key = user_key(target)
     commerce_keys = target_keys(target)
