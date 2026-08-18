@@ -44,4 +44,5 @@ EOF
 
 systemctl --user daemon-reload
 systemctl --user enable sud-max-bot.service
+pkill -f '[m]ax_bot.py --poll' || true
 systemctl --user status sud-max-bot.service --no-pager || true

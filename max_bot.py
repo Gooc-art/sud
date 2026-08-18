@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import hmac
 import json
@@ -39,6 +40,7 @@ EXPORT_TIMEOUT_SECONDS = int(os.environ.get("SUD_EXPORT_TIMEOUT_SECONDS", str(4 
 HTTP_TIMEOUT_SECONDS = int(os.environ.get("SUD_HTTP_TIMEOUT_SECONDS", "20"))
 WEEKLY_CHAT_ID_FILE = Path(os.environ.get("SUD_WEEKLY_CHAT_ID_FILE", "~/.config/sud/weekly-chat-id")).expanduser()
 STATE_FILE = Path(os.environ.get("SUD_MAX_STATE_FILE", "~/.config/sud/max-bot-state.json")).expanduser()
+LOCK_FILE = Path(os.environ.get("SUD_MAX_LOCK_FILE", "~/.config/sud/max-bot.lock")).expanduser()
 ADMIN_USER_IDS = {int(user_id) for user_id in os.environ.get("SUD_ADMIN_USER_IDS", "").replace(",", " ").split()}
 ADMIN_PHONES = {
     phone
@@ -79,6 +81,22 @@ jobs: dict[str, Job] = {}
 job_queue: queue.Queue[Job] = queue.Queue()
 commerce_password_pending: set[str] = set()
 verified_admin_phones: dict[str, str] = {}
+lock_file_handle = None
+
+
+def acquire_lock() -> None:
+    global lock_file_handle
+    LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+    lock_file_handle = LOCK_FILE.open("w")
+    try:
+        fcntl.flock(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        lock_file_handle.close()
+        lock_file_handle = None
+        print("another max_bot.py --poll instance is already running", file=sys.stderr)
+        raise SystemExit(0)
+    lock_file_handle.write(str(os.getpid()))
+    lock_file_handle.flush()
 
 
 def load_state() -> None:
@@ -717,6 +735,7 @@ def main() -> int:
     args = parser.parse_args()
     if not args.poll:
         parser.error("use --poll")
+    acquire_lock()
     load_state()
     prune_non_admin_screens()
     save_state()

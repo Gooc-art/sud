@@ -681,6 +681,20 @@ class MaxBotTest(unittest.TestCase):
             with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
                 self.assertFalse(b.is_admin({"user_id": 23325864}))
 
+    def test_lock_blocks_second_bot_instance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            lock_file = b.Path(tmp) / "bot.lock"
+            with mock.patch.object(b, "LOCK_FILE", lock_file):
+                b.acquire_lock()
+                first_handle = b.lock_file_handle
+                try:
+                    b.lock_file_handle = None
+                    with self.assertRaises(SystemExit):
+                        b.acquire_lock()
+                finally:
+                    first_handle.close()
+                    b.lock_file_handle = None
+
     def test_stale_verified_phone_not_in_admin_phones_does_not_open_menu(self):
         b.verified_admin_phones.clear()
         b.verified_admin_phones["23325864"] = "79129111119"
