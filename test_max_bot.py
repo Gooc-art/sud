@@ -380,6 +380,19 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.sessions["42"].step, "commerce_password")
         self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
 
+    def test_commerce_password_survives_callback_target_shape_drift_to_chat_only(self):
+        b.sessions.clear()
+        b.commerce_password_pending.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42, "chat_id": 7}, "", "commerce", "cb1")
+                    b.handle({"chat_id": 7}, "", "week", "cb2")
+
+        self.assertEqual(b.sessions["7"].step, "")
+        self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
+
 
 if __name__ == "__main__":
     unittest.main()
