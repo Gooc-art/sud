@@ -55,6 +55,7 @@ DEBUG_USER_IDS = {user_id for user_id in os.environ.get("SUD_DEBUG_USER_IDS", "2
 class Session:
     step: str = ""
     prev_step: str = ""
+    export_kind: str = ""
     date_from: date | None = None
     date_to: date | None = None
     court: str | None = None
@@ -281,15 +282,23 @@ def delete_message(message_id: str) -> None:
 
 
 def main_buttons() -> list[list[tuple[str, str]]]:
-    return [[("📊 Выгрузка за месяц", "month")], [("💼 Выгрузка по коммерции", "commerce")], [("📅 Выбрать период", "period"), ("📌 Статус выгрузки", "status")], [("❌ Отмена", "cancel")]]
+    return [[("🏛 Выгрузка суды", "courts")], [("💼 Выгрузка коммерции", "commerce")]]
+
+
+def courts_buttons() -> list[list[tuple[str, str]]]:
+    return [[("📊 Выгрузка за месяц", "month")], [("📅 Выбрать период", "period")], [("📌 Статус выгрузки", "status")], [("🏠 Главное меню", "main")]]
+
+
+def commerce_buttons() -> list[list[tuple[str, str]]]:
+    return [[("📅 Выбрать период", "commerce_period")], [("📌 Статус выгрузки", "commerce_status")], [("🏠 Главное меню", "main")]]
 
 
 def nav_buttons(back: str = "main") -> list[tuple[str, str]]:
     return [("⬅️ Назад", back), ("🏠 Главное меню", "main")]
 
 
-def period_buttons() -> list[list[tuple[str, str]]]:
-    return [[("📆 Текущая неделя", "period_current"), ("📊 Прошлая неделя", "week")], [("✏️ Свой период", "period_custom")], nav_buttons()]
+def period_buttons(back: str = "courts") -> list[list[tuple[str, str]]]:
+    return [[("📆 Текущая неделя", "period_current"), ("📊 Прошлая неделя", "week")], [("✏️ Свой период", "period_custom")], nav_buttons(back)]
 
 
 def court_buttons(prefix: str) -> list[list[tuple[str, str]]]:
@@ -301,6 +310,14 @@ def court_buttons(prefix: str) -> list[list[tuple[str, str]]]:
 
 def confirm_buttons() -> list[list[tuple[str, str]]]:
     return [[("✅ Запустить выгрузку", "run_confirm")], [("📅 Изменить период", "period"), ("🏛 Изменить суд", "choose_court")], [("🏠 Главное меню", "main")]]
+
+
+def show_courts_menu(target: dict) -> None:
+    show_menu(target, "Выгрузка судов ЯНАО. Выберите действие.", courts_buttons())
+
+
+def show_commerce_menu(target: dict) -> None:
+    show_menu(target, "Выгрузка коммерции. Выберите действие.", commerce_buttons())
 
 
 def last_full_week(today: date | None = None) -> tuple[date, date]:
@@ -544,7 +561,7 @@ def worker() -> None:
             match = re.search(r"rows=(\d+)", result.stdout)
             job.rows = int(match.group(1)) if match else rows_count(job.outdir / "report.csv")
             job.status = "done"
-            show_menu(job.target, done_message(job), [[("Новая выгрузка", "period")], [("Главное меню", "main")]])
+            show_menu(job.target, done_message(job), [[("Новая выгрузка судов", "courts")], [("Главное меню", "main")]])
             for name, caption in (
                 ("report.xlsx", "Excel-отчет"),
                 ("report.pdf", "PDF-версия"),
@@ -659,8 +676,9 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
             return
         if not payload and text == COMMERCE_PASSWORD:
             commerce_password_pending.difference_update(commerce_keys)
-            sess.step = "period"
-            show_menu(target, "Выберите период выгрузки по коммерции.", period_buttons())
+            sess.step = "commerce_menu"
+            sess.export_kind = "commerce"
+            show_commerce_menu(target)
             ack_callback(callback_id)
             return
         if action != "commerce":
@@ -673,26 +691,37 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     if action in {"/start", "start", "Старт", "main"}:
         commerce_password_pending.difference_update(commerce_keys)
         sess.step = ""
-        show_menu(target, "Бот делает выгрузку судебных дел ЯНАО в Excel/PDF/CSV.", main_buttons())
+        sess.export_kind = ""
+        show_menu(target, "Выберите раздел выгрузки.", main_buttons())
+    elif action == "courts":
+        commerce_password_pending.difference_update(commerce_keys)
+        sess.step = "courts_menu"
+        sess.export_kind = "courts"
+        show_courts_menu(target)
     elif action in {"/month", "month"}:
+        sess.export_kind = "courts"
         sess.date_from, sess.date_to = last_full_month()
         sess.court = None
         sess.step = "month_court"
         show_menu(target, f"Период: {sess.date_from:%d.%m.%Y}-{sess.date_to:%d.%m.%Y}. Выберите суд.", court_buttons("court"))
     elif action in {"/week", "week"}:
+        sess.export_kind = "courts"
         sess.date_from, sess.date_to = last_full_week()
         sess.court = None
         sess.step = "week_court"
         show_menu(target, f"Период: {sess.date_from:%d.%m.%Y}-{sess.date_to:%d.%m.%Y}. Выберите суд.", court_buttons("court"))
     elif action in {"/period", "period"}:
+        sess.export_kind = "courts"
         sess.step = "period"
-        show_menu(target, "Выберите период выгрузки.", period_buttons())
+        show_menu(target, "Выберите период выгрузки судов.", period_buttons("courts"))
     elif action == "period_current":
+        sess.export_kind = "courts"
         sess.date_from, sess.date_to = current_week()
         sess.court = None
         sess.step = "period_court"
         show_menu(target, f"Период: {sess.date_from:%d.%m.%Y}-{sess.date_to:%d.%m.%Y}. Выберите суд.", court_buttons("court"))
     elif action == "period_custom":
+        sess.export_kind = "courts"
         sess.court = None
         sess.step = "from"
         show_menu(target, "Введите дату начала в формате ДД.ММ.ГГГГ.", [nav_buttons("period")])
@@ -705,7 +734,21 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
             sess.date_to = None
             sess.court = None
             sess.step = "commerce_password"
+            sess.export_kind = "commerce"
             show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()], "commerce_password")
+    elif action in {"commerce_period", "commerce_status"}:
+        if sess.step != "commerce_menu" or sess.export_kind != "commerce":
+            if not COMMERCE_PASSWORD:
+                show_menu(target, "Пароль коммерции не настроен.", main_buttons())
+            else:
+                commerce_password_pending.update(commerce_keys)
+                sess.step = "commerce_password"
+                sess.export_kind = "commerce"
+                show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()], "commerce_password")
+        elif action == "commerce_period":
+            show_menu(target, "Коммерческая выгрузка пока не подключена к экспорту.", commerce_buttons())
+        else:
+            show_menu(target, "Задач коммерческой выгрузки пока нет.", commerce_buttons())
     elif action == "status" or action == "/status":
         job = jobs.get(sess.last_job or "")
         if not job:
@@ -720,6 +763,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     elif action in {"cancel", "/cancel"}:
         commerce_password_pending.difference_update(commerce_keys)
         sess.step = ""
+        sess.export_kind = ""
         show_menu(target, "Отменено.", main_buttons())
     elif action == "choose_court":
         sess.step = "period_court"
@@ -727,7 +771,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     elif action.startswith("court:"):
         if not sess.date_from or not sess.date_to:
             sess.step = "period"
-            show_menu(target, "Сначала выберите период выгрузки.", period_buttons())
+            show_menu(target, "Сначала выберите период выгрузки судов.", period_buttons("courts"))
         else:
             court = action.split(":", 1)[1]
             sess.court = None if court == "all" else court
@@ -736,7 +780,7 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     elif action == "run_confirm":
         if not sess.date_from or not sess.date_to:
             sess.step = "period"
-            show_menu(target, "Сначала выберите период выгрузки.", period_buttons())
+            show_menu(target, "Сначала выберите период выгрузки судов.", period_buttons("courts"))
         else:
             try:
                 job = start_job(target, sess.date_from, sess.date_to, sess.court)
@@ -766,8 +810,9 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     elif sess.step == "commerce_password":
         if text == COMMERCE_PASSWORD:
             commerce_password_pending.difference_update(commerce_keys)
-            sess.step = "period"
-            show_menu(target, "Выберите период выгрузки по коммерции.", period_buttons())
+            sess.step = "commerce_menu"
+            sess.export_kind = "commerce"
+            show_commerce_menu(target)
         else:
             show_menu(target, "Неверный пароль. Введите пароль еще раз.", [nav_buttons()], "commerce_password")
     else:

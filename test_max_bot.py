@@ -288,7 +288,14 @@ class MaxBotTest(unittest.TestCase):
         b.sessions["42"] = b.Session(date_from=dt.date(2026, 7, 20), date_to=dt.date(2026, 7, 26))
         payloads = {
             payload
-            for keyboard_rows in (b.main_buttons(), b.period_buttons(), b.court_buttons("court"), b.confirm_buttons())
+            for keyboard_rows in (
+                b.main_buttons(),
+                b.courts_buttons(),
+                b.commerce_buttons(),
+                b.period_buttons(),
+                b.court_buttons("court"),
+                b.confirm_buttons(),
+            )
             for row in keyboard_rows
             for _, payload in row
         }
@@ -345,7 +352,7 @@ class MaxBotTest(unittest.TestCase):
 
         ack.assert_called_once_with("cb1")
         self.assertEqual(b.sessions["42"].step, "period")
-        self.assertEqual(shown[-1], "Сначала выберите период выгрузки.")
+        self.assertEqual(shown[-1], "Сначала выберите период выгрузки судов.")
 
     def test_stale_confirm_button_without_period_does_not_start_job(self):
         b.sessions.clear()
@@ -358,7 +365,7 @@ class MaxBotTest(unittest.TestCase):
         ack.assert_called_once_with("cb1")
         start_job.assert_not_called()
         self.assertEqual(b.sessions["42"].step, "period")
-        self.assertEqual(shown[-1], "Сначала выберите период выгрузки.")
+        self.assertEqual(shown[-1], "Сначала выберите период выгрузки судов.")
 
     def test_start_job_allows_45_days(self):
         b.sessions.clear()
@@ -891,7 +898,30 @@ class MaxBotTest(unittest.TestCase):
 
         show_menu.assert_called_once()
 
-    def test_commerce_password_opens_period_menu(self):
+    def test_main_menu_has_only_courts_and_commerce(self):
+        self.assertEqual(b.main_buttons(), [[("🏛 Выгрузка суды", "courts")], [("💼 Выгрузка коммерции", "commerce")]])
+        payloads = {payload for row in b.main_buttons() for _, payload in row}
+        self.assertFalse({"month", "period", "status", "week"} & payloads)
+
+    def test_courts_button_opens_court_export_menu(self):
+        shown = []
+        with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, buttons, *_args: shown.append((text, buttons))):
+            with mock.patch.object(b, "ack_callback"):
+                b.handle({"user_id": 42}, "", "courts", "cb1")
+
+        self.assertEqual(b.sessions["42"].step, "courts_menu")
+        self.assertEqual(b.sessions["42"].export_kind, "courts")
+        self.assertEqual(shown[-1], ("Выгрузка судов ЯНАО. Выберите действие.", b.courts_buttons()))
+
+    def test_courts_menu_contains_court_actions_only_inside(self):
+        payloads = {payload for row in b.courts_buttons() for _, payload in row}
+
+        self.assertIn("month", payloads)
+        self.assertIn("period", payloads)
+        self.assertIn("status", payloads)
+        self.assertNotIn("commerce", payloads)
+
+    def test_commerce_password_opens_commerce_menu(self):
         b.sessions.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
@@ -900,8 +930,34 @@ class MaxBotTest(unittest.TestCase):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "secret")
 
-        self.assertEqual(b.sessions["42"].step, "period")
-        self.assertEqual(shown[-1], "Выберите период выгрузки по коммерции.")
+        self.assertEqual(b.sessions["42"].step, "commerce_menu")
+        self.assertEqual(b.sessions["42"].export_kind, "commerce")
+        self.assertEqual(shown[-1], "Выгрузка коммерции. Выберите действие.")
+
+    def test_commerce_after_password_does_not_show_court_buttons(self):
+        b.sessions.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, buttons, *_args: shown.append((text, buttons))):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "commerce", "cb1")
+                    b.handle({"user_id": 42}, "secret")
+
+        text, buttons = shown[-1]
+        payloads = {payload for row in buttons for _, payload in row}
+        self.assertNotIn("court:all", payloads)
+        self.assertNotIn("Выберите суд", text)
+
+    def test_commerce_inner_buttons_require_password_first(self):
+        b.sessions.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "commerce_period", "cb1")
+
+        self.assertEqual(b.sessions["42"].step, "commerce_password")
+        self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
 
     def test_commerce_prompt_replaces_main_menu(self):
         b.sessions.clear()
@@ -1016,8 +1072,8 @@ class MaxBotTest(unittest.TestCase):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "week")
 
-        self.assertEqual(b.sessions["42"].step, "period")
-        self.assertEqual(shown[-1], "Выберите период выгрузки по коммерции.")
+        self.assertEqual(b.sessions["42"].step, "commerce_menu")
+        self.assertEqual(shown[-1], "Выгрузка коммерции. Выберите действие.")
 
 
 if __name__ == "__main__":
