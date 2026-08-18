@@ -27,6 +27,7 @@ MAX_DAYS = int(os.environ.get("SUD_MAX_DAYS", "45"))
 EXPORT_TIMEOUT_SECONDS = int(os.environ.get("SUD_EXPORT_TIMEOUT_SECONDS", str(4 * 60 * 60)))
 HTTP_TIMEOUT_SECONDS = int(os.environ.get("SUD_HTTP_TIMEOUT_SECONDS", "20"))
 WEEKLY_CHAT_ID_FILE = Path(os.environ.get("SUD_WEEKLY_CHAT_ID_FILE", "~/.config/sud/weekly-chat-id")).expanduser()
+ADMIN_USER_IDS = {int(user_id) for user_id in os.environ.get("SUD_ADMIN_USER_IDS", "").replace(",", " ").split()}
 
 
 @dataclass
@@ -229,6 +230,11 @@ def session_key(target: dict) -> str:
     return str(target.get("chat_id") or target["user_id"])
 
 
+def is_admin(target: dict) -> bool:
+    user_id = target.get("user_id")
+    return not ADMIN_USER_IDS or (user_id is not None and int(user_id) in ADMIN_USER_IDS)
+
+
 def rows_count(csv_path: Path) -> int:
     if not csv_path.exists():
         return 0
@@ -349,6 +355,10 @@ def extract_event(update: dict) -> tuple[dict, str, str, str]:
 
 def handle(target: dict, text: str, payload: str = "", callback_id: str = "") -> None:
     if not target.get("user_id") and not target.get("chat_id"):
+        return
+    if not is_admin(target):
+        send_text(target, "Нет доступа.")
+        ack_callback(callback_id)
         return
     key = session_key(target)
     sess = sessions.setdefault(key, Session())

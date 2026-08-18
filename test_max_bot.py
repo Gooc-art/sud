@@ -266,6 +266,25 @@ class MaxBotTest(unittest.TestCase):
             finally:
                 b.Path("/tmp/sud-weekly-chat-test").unlink(missing_ok=True)
 
+    def test_non_admin_gets_no_access(self):
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "send_text") as send_text:
+                with mock.patch.object(b, "show_menu") as show_menu:
+                    with mock.patch.object(b, "ack_callback") as ack:
+                        b.handle({"user_id": 1}, "/start", callback_id="cb1")
+
+        send_text.assert_called_once_with({"user_id": 1}, "Нет доступа.")
+        show_menu.assert_not_called()
+        ack.assert_called_once_with("cb1")
+
+    def test_admin_can_open_menu(self):
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "show_menu") as show_menu:
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 6393482}, "/start")
+
+        show_menu.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

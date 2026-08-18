@@ -138,6 +138,7 @@ output/cache/cases/
 MAX_TOKEN=
 MAX_API_BASE=https://platform-api2.max.ru
 SUD_MAX_DAYS=31
+SUD_ADMIN_USER_IDS=6393482
 ```
 
 Установка user-service:
