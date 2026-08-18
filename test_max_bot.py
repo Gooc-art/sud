@@ -24,6 +24,50 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.message_id({"message": {"body": {"mid": "m1"}}}), "m1")
         self.assertEqual(b.message_id({"body": {"mid": "m2"}}), "m2")
 
+    def test_show_menu_falls_back_when_edit_is_rejected(self):
+        b.sessions.clear()
+        b.sessions["42"] = b.Session(menu_message_id="old")
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params))
+            if method == "PUT":
+                return {"success": False, "message": "error.edit.wrong.author"}
+            return {"message": {"body": {"mid": "new"}}}
+
+        with mock.patch.object(b, "request", side_effect=fake_request):
+            with mock.patch.object(b.time, "sleep"):
+                b.show_menu({"user_id": 42}, "Меню", b.main_buttons())
+
+        self.assertEqual(calls[0], ("PUT", "/messages", {"message_id": "old"}))
+        self.assertEqual(calls[1][0:2], ("POST", "/messages"))
+        self.assertEqual(b.sessions["42"].menu_message_id, "new")
+
+    def test_full_menu_flow_reuses_menu_message(self):
+        b.sessions.clear()
+        target = {"user_id": 42}
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params))
+            if method == "POST":
+                return {"message": {"body": {"mid": "menu-1"}}}
+            return {"success": True}
+
+        def fake_start_job(_target, start, end, court):
+            return b.Job("j1", _target, start, end, court, b.Path("out"))
+
+        with mock.patch.object(b, "request", side_effect=fake_request):
+            with mock.patch.object(b, "ack_callback"):
+                with mock.patch.object(b.time, "sleep"):
+                    with mock.patch.object(b, "start_job", side_effect=fake_start_job):
+                        for payload in ("start", "period", "period_current", "court:all", "run_confirm"):
+                            b.handle(target, "", payload, "cb1")
+
+        self.assertEqual([call[0] for call in calls], ["POST", "PUT", "PUT", "PUT", "PUT"])
+        self.assertEqual({call[2]["message_id"] for call in calls[1:]}, {"menu-1"})
+        self.assertEqual(b.sessions["42"].step, "running")
+
     def test_extract_callback_target_from_recipient(self):
         target, text, payload, callback_id = b.extract_event(
             {

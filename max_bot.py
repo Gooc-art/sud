@@ -136,11 +136,13 @@ def show_menu(target: dict, text: str, buttons: list[list[tuple[str, str]]]) -> 
     body = {"text": text[:4000], "attachments": [keyboard(buttons)]}
     if sess.menu_message_id:
         try:
-            request("PUT", "/messages", {"message_id": sess.menu_message_id}, body)
+            response = request("PUT", "/messages", {"message_id": sess.menu_message_id}, body)
+            if response.get("success") is False:
+                raise RuntimeError(response.get("message") or "menu edit failed")
             time.sleep(0.55)
             return
         except Exception:
-            pass
+            sess.menu_message_id = None
     sess.menu_message_id = message_id(send_text(target, text, buttons))
 
 
