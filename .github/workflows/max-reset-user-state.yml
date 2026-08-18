@@ -1,0 +1,33 @@
+name: max-reset-user-state
+
+on:
+  workflow_dispatch:
+    inputs:
+      user_id:
+        description: "User id to remove from max-bot-state.json"
+        required: true
+
+jobs:
+  reset:
+    runs-on: self-hosted
+    steps:
+      - name: Reset user state
+        run: |
+          USER_ID='${{ inputs.user_id }}' python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          user_id = os.environ["USER_ID"]
+          path = Path.home() / ".config/sud/max-bot-state.json"
+          if not path.exists():
+              print("state missing")
+              raise SystemExit(0)
+          data = json.loads(path.read_text())
+          for key in ("menu_message_ids", "screen_types", "verified_admin_phones"):
+              (data.get(key) or {}).pop(user_id, None)
+          tmp = path.with_suffix(".tmp")
+          tmp.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+          tmp.replace(path)
+          print(json.dumps(data, ensure_ascii=False, sort_keys=True))
+          PY
