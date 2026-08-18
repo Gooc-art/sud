@@ -50,12 +50,36 @@ ADMIN_PHONES = {
 COMMERCE_PASSWORD = os.environ.get("SUD_COMMERCE_PASSWORD", "")
 DEBUG_USER_IDS = {user_id for user_id in os.environ.get("SUD_DEBUG_USER_IDS", "23325864").replace(",", " ").split() if user_id}
 
+COMMERCE_CITIES = {
+    "salehard": "Салехард",
+    "noyabrsk": "Ноябрьск",
+    "novy_urengoy": "Новый Уренгой",
+    "nadym": "Надым",
+    "muravlenko": "Муравленко",
+    "gubkinsky": "Губкинский",
+    "labytnangi": "Лабытнанги",
+}
+COMMERCE_SPHERES = {
+    "all": "Все сферы",
+    "ip": "ИП",
+    "ooo": "ООО",
+    "person": "Самозанятые / физлица",
+}
+COMMERCE_MODES = {
+    "business": "Бизнесы",
+    "executor": "Исполнители",
+    "all": "Бизнесы + исполнители",
+}
+
 
 @dataclass
 class Session:
     step: str = ""
     prev_step: str = ""
     export_kind: str = ""
+    commerce_city: str = ""
+    commerce_sphere: str = ""
+    commerce_mode: str = ""
     date_from: date | None = None
     date_to: date | None = None
     court: str | None = None
@@ -290,7 +314,7 @@ def courts_buttons() -> list[list[tuple[str, str]]]:
 
 
 def commerce_buttons() -> list[list[tuple[str, str]]]:
-    return [[("📅 Выбрать период", "commerce_period")], [("📌 Статус выгрузки", "commerce_status")], [("🏠 Главное меню", "main")]]
+    return [[("▶️ Начать настройку", "commerce_city_start")], [("📌 Статус выгрузки", "commerce_status")], [("🏠 Главное меню", "main")]]
 
 
 def nav_buttons(back: str = "main") -> list[tuple[str, str]]:
@@ -299,6 +323,37 @@ def nav_buttons(back: str = "main") -> list[tuple[str, str]]:
 
 def period_buttons(back: str = "courts") -> list[list[tuple[str, str]]]:
     return [[("📆 Текущая неделя", "period_current"), ("📊 Прошлая неделя", "week")], [("✏️ Свой период", "period_custom")], nav_buttons(back)]
+
+
+def commerce_city_buttons() -> list[list[tuple[str, str]]]:
+    rows = [[(name, f"commerce_city:{key}")] for key, name in COMMERCE_CITIES.items()]
+    rows.append(nav_buttons("main"))
+    return rows
+
+
+def commerce_sphere_buttons() -> list[list[tuple[str, str]]]:
+    return [[(name, f"commerce_sphere:{key}")] for key, name in COMMERCE_SPHERES.items()] + [nav_buttons("commerce_city_start")]
+
+
+def commerce_period_buttons() -> list[list[tuple[str, str]]]:
+    return [
+        [("📆 Текущая неделя", "commerce_period_current"), ("📊 Следующая неделя", "commerce_period_next")],
+        [("✏️ Свой период", "commerce_period_custom")],
+        nav_buttons("commerce_sphere_start"),
+    ]
+
+
+def commerce_mode_buttons() -> list[list[tuple[str, str]]]:
+    return [[(name, f"commerce_mode:{key}")] for key, name in COMMERCE_MODES.items()] + [nav_buttons("commerce_period_start")]
+
+
+def commerce_confirm_buttons() -> list[list[tuple[str, str]]]:
+    return [
+        [("✅ Запустить выгрузку", "commerce_run_confirm")],
+        [("🏙 Изменить город", "commerce_city_start"), ("🧾 Изменить сферу", "commerce_sphere_start")],
+        [("📅 Изменить период", "commerce_period_start"), ("⚙️ Изменить режим", "commerce_mode_start")],
+        [("🏠 Главное меню", "main")],
+    ]
 
 
 def court_buttons(prefix: str) -> list[list[tuple[str, str]]]:
@@ -316,8 +371,45 @@ def show_courts_menu(target: dict) -> None:
     show_menu(target, "Выгрузка судов ЯНАО. Выберите действие.", courts_buttons())
 
 
-def show_commerce_menu(target: dict) -> None:
-    show_menu(target, "Выгрузка коммерции. Выберите действие.", commerce_buttons())
+def commerce_choice_summary(sess: Session) -> str:
+    city = COMMERCE_CITIES.get(sess.commerce_city, "ожидает выбора")
+    sphere = COMMERCE_SPHERES.get(sess.commerce_sphere, "ожидает выбора")
+    if sess.date_from and sess.date_to:
+        period = f"{sess.date_from:%d.%m.%Y}-{sess.date_to:%d.%m.%Y}"
+    else:
+        period = "ожидает выбора"
+    mode = COMMERCE_MODES.get(sess.commerce_mode, "ожидает выбора")
+    return f"Текущий выбор:\nГород: {city}\nСфера: {sphere}\nПериод: {period}\nРежим: {mode}"
+
+
+def show_commerce_city(target: dict, sess: Session) -> None:
+    sess.step = "commerce_city"
+    sess.export_kind = "commerce"
+    show_menu(target, f"Подготовлю выгрузку по бизнесам и исполнителям ЯНАО.\n\nШаг 1 из 5. Выберите город.\n\n{commerce_choice_summary(sess)}", commerce_city_buttons())
+
+
+def show_commerce_sphere(target: dict, sess: Session) -> None:
+    sess.step = "commerce_sphere"
+    sess.export_kind = "commerce"
+    show_menu(target, f"Шаг 2 из 5. Выберите сферу.\n\n{commerce_choice_summary(sess)}", commerce_sphere_buttons())
+
+
+def show_commerce_period(target: dict, sess: Session) -> None:
+    sess.step = "commerce_period"
+    sess.export_kind = "commerce"
+    show_menu(target, f"Шаг 3 из 5. Выберите период.\n\n{commerce_choice_summary(sess)}", commerce_period_buttons())
+
+
+def show_commerce_mode(target: dict, sess: Session) -> None:
+    sess.step = "commerce_mode"
+    sess.export_kind = "commerce"
+    show_menu(target, f"Шаг 4 из 5. Выберите режим.\n\n{commerce_choice_summary(sess)}", commerce_mode_buttons())
+
+
+def show_commerce_confirm(target: dict, sess: Session) -> None:
+    sess.step = "commerce_confirm"
+    sess.export_kind = "commerce"
+    show_menu(target, f"Шаг 5 из 5. Проверьте параметры.\n\n{commerce_choice_summary(sess)}", commerce_confirm_buttons())
 
 
 def last_full_week(today: date | None = None) -> tuple[date, date]:
@@ -336,6 +428,12 @@ def last_full_month(today: date | None = None) -> tuple[date, date]:
 def current_week(today: date | None = None) -> tuple[date, date]:
     today = today or date.today()
     start = today - timedelta(days=today.weekday())
+    return start, start + timedelta(days=6)
+
+
+def next_week(today: date | None = None) -> tuple[date, date]:
+    start, _ = current_week(today)
+    start += timedelta(days=7)
     return start, start + timedelta(days=6)
 
 
@@ -626,6 +724,10 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     key = session_key(target)
     sess = sessions.setdefault(key, Session())
     action = payload or text
+    if action == "max:commerce":
+        action = "commerce"
+    elif action == "max:main":
+        action = "commerce_city_start"
     commerce_keys = target_keys(target)
     debug_target(
         target,
@@ -671,14 +773,19 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
         if action in {"main", "cancel", "/cancel"}:
             commerce_password_pending.difference_update(commerce_keys)
             sess.step = ""
+            sess.export_kind = ""
             show_menu(target, "Отменено.", main_buttons())
             ack_callback(callback_id)
             return
         if not payload and text == COMMERCE_PASSWORD:
             commerce_password_pending.difference_update(commerce_keys)
-            sess.step = "commerce_menu"
+            sess.commerce_city = ""
+            sess.commerce_sphere = ""
+            sess.commerce_mode = ""
+            sess.date_from = None
+            sess.date_to = None
             sess.export_kind = "commerce"
-            show_commerce_menu(target)
+            show_commerce_city(target, sess)
             ack_callback(callback_id)
             return
         if action != "commerce":
@@ -730,14 +837,18 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
             show_menu(target, "Пароль коммерции не настроен.", main_buttons())
         else:
             commerce_password_pending.update(commerce_keys)
+            sess.commerce_city = ""
+            sess.commerce_sphere = ""
+            sess.commerce_mode = ""
             sess.date_from = None
             sess.date_to = None
             sess.court = None
             sess.step = "commerce_password"
             sess.export_kind = "commerce"
             show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()], "commerce_password")
-    elif action in {"commerce_period", "commerce_status"}:
-        if sess.step != "commerce_menu" or sess.export_kind != "commerce":
+    elif action.startswith("commerce_"):
+        commerce_unlocked = sess.export_kind == "commerce" and sess.step.startswith("commerce_") and sess.step != "commerce_password"
+        if not commerce_unlocked:
             if not COMMERCE_PASSWORD:
                 show_menu(target, "Пароль коммерции не настроен.", main_buttons())
             else:
@@ -745,10 +856,53 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
                 sess.step = "commerce_password"
                 sess.export_kind = "commerce"
                 show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()], "commerce_password")
-        elif action == "commerce_period":
-            show_menu(target, "Коммерческая выгрузка пока не подключена к экспорту.", commerce_buttons())
-        else:
+        elif action == "commerce_city_start":
+            show_commerce_city(target, sess)
+        elif action.startswith("commerce_city:"):
+            city = action.split(":", 1)[1]
+            if city in COMMERCE_CITIES:
+                sess.commerce_city = city
+                show_commerce_sphere(target, sess)
+            else:
+                show_commerce_city(target, sess)
+        elif action == "commerce_sphere_start":
+            show_commerce_sphere(target, sess)
+        elif action.startswith("commerce_sphere:"):
+            sphere = action.split(":", 1)[1]
+            if sphere in COMMERCE_SPHERES:
+                sess.commerce_sphere = sphere
+                show_commerce_period(target, sess)
+            else:
+                show_commerce_sphere(target, sess)
+        elif action == "commerce_period_start":
+            show_commerce_period(target, sess)
+        elif action == "commerce_period_current":
+            sess.date_from, sess.date_to = current_week()
+            show_commerce_mode(target, sess)
+        elif action == "commerce_period_next":
+            sess.date_from, sess.date_to = next_week()
+            show_commerce_mode(target, sess)
+        elif action == "commerce_period_custom":
+            sess.step = "commerce_from"
+            show_menu(target, "Введите дату начала в формате ДД.ММ.ГГГГ.", [nav_buttons("commerce_period_start")])
+        elif action == "commerce_mode_start":
+            show_commerce_mode(target, sess)
+        elif action.startswith("commerce_mode:"):
+            mode = action.split(":", 1)[1]
+            if mode in COMMERCE_MODES:
+                sess.commerce_mode = mode
+                show_commerce_confirm(target, sess)
+            else:
+                show_commerce_mode(target, sess)
+        elif action == "commerce_run_confirm":
+            if not (sess.commerce_city and sess.commerce_sphere and sess.date_from and sess.date_to and sess.commerce_mode):
+                show_commerce_city(target, sess)
+            else:
+                show_menu(target, "Коммерческий экспортер не настроен. Судовая выгрузка не запущена.", commerce_confirm_buttons())
+        elif action == "commerce_status":
             show_menu(target, "Задач коммерческой выгрузки пока нет.", commerce_buttons())
+        else:
+            show_commerce_city(target, sess)
     elif action == "status" or action == "/status":
         job = jobs.get(sess.last_job or "")
         if not job:
@@ -788,6 +942,24 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
                 show_menu(target, f"Принял, собираю отчет за {job.date_from:%d.%m.%Y}-{job.date_to:%d.%m.%Y}. Суд: {court_name(job.court)}. Это может занять несколько минут.", [[("📌 Статус выгрузки", "status")], [("🏠 Главное меню", "main")]])
             except ValueError as exc:
                 show_menu(target, str(exc), main_buttons())
+    elif sess.step == "commerce_from":
+        parsed = parse_ru_date(text)
+        if not parsed:
+            show_menu(target, "Не понял дату. Введите в формате ДД.ММ.ГГГГ, например 29.07.2026.", [nav_buttons("commerce_period_start")])
+            return
+        sess.date_from = parsed
+        sess.step = "commerce_to"
+        show_menu(target, "Введите дату окончания в формате ДД.ММ.ГГГГ.", [nav_buttons("commerce_period_start")])
+    elif sess.step == "commerce_to":
+        parsed = parse_ru_date(text)
+        if not parsed:
+            show_menu(target, "Не понял дату. Введите в формате ДД.ММ.ГГГГ, например 29.07.2026.", [nav_buttons("commerce_period_start")])
+            return
+        if sess.date_from and parsed < sess.date_from:
+            show_menu(target, "Дата окончания не может быть раньше даты начала.", [nav_buttons("commerce_period_start")])
+            return
+        sess.date_to = parsed
+        show_commerce_mode(target, sess)
     elif sess.step == "from":
         parsed = parse_ru_date(text)
         if not parsed:
@@ -810,9 +982,13 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     elif sess.step == "commerce_password":
         if text == COMMERCE_PASSWORD:
             commerce_password_pending.difference_update(commerce_keys)
-            sess.step = "commerce_menu"
+            sess.commerce_city = ""
+            sess.commerce_sphere = ""
+            sess.commerce_mode = ""
+            sess.date_from = None
+            sess.date_to = None
             sess.export_kind = "commerce"
-            show_commerce_menu(target)
+            show_commerce_city(target, sess)
         else:
             show_menu(target, "Неверный пароль. Введите пароль еще раз.", [nav_buttons()], "commerce_password")
     else:

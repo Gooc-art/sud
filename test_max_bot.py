@@ -292,6 +292,11 @@ class MaxBotTest(unittest.TestCase):
                 b.main_buttons(),
                 b.courts_buttons(),
                 b.commerce_buttons(),
+                b.commerce_city_buttons(),
+                b.commerce_sphere_buttons(),
+                b.commerce_period_buttons(),
+                b.commerce_mode_buttons(),
+                b.commerce_confirm_buttons(),
                 b.period_buttons(),
                 b.court_buttons("court"),
                 b.confirm_buttons(),
@@ -921,7 +926,7 @@ class MaxBotTest(unittest.TestCase):
         self.assertIn("status", payloads)
         self.assertNotIn("commerce", payloads)
 
-    def test_commerce_password_opens_commerce_menu(self):
+    def test_commerce_password_opens_city_step(self):
         b.sessions.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
@@ -930,9 +935,9 @@ class MaxBotTest(unittest.TestCase):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "secret")
 
-        self.assertEqual(b.sessions["42"].step, "commerce_menu")
+        self.assertEqual(b.sessions["42"].step, "commerce_city")
         self.assertEqual(b.sessions["42"].export_kind, "commerce")
-        self.assertEqual(shown[-1], "Выгрузка коммерции. Выберите действие.")
+        self.assertIn("Шаг 1 из 5. Выберите город", shown[-1])
 
     def test_commerce_after_password_does_not_show_court_buttons(self):
         b.sessions.clear()
@@ -947,6 +952,82 @@ class MaxBotTest(unittest.TestCase):
         payloads = {payload for row in buttons for _, payload in row}
         self.assertNotIn("court:all", payloads)
         self.assertNotIn("Выберите суд", text)
+
+    def test_commerce_wizard_reaches_confirm_without_court_selection(self):
+        b.sessions.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, buttons, *_args: shown.append((text, buttons))):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "commerce", "cb1")
+                    b.handle({"user_id": 42}, "secret")
+                    b.handle({"user_id": 42}, "", "commerce_city:salehard", "cb2")
+                    b.handle({"user_id": 42}, "", "commerce_sphere:ip", "cb3")
+                    b.handle({"user_id": 42}, "", "commerce_period_current", "cb4")
+                    b.handle({"user_id": 42}, "", "commerce_mode:all", "cb5")
+
+        sess = b.sessions["42"]
+        self.assertEqual(sess.step, "commerce_confirm")
+        self.assertEqual(sess.commerce_city, "salehard")
+        self.assertEqual(sess.commerce_sphere, "ip")
+        self.assertEqual(sess.commerce_mode, "all")
+        self.assertIn("Шаг 5 из 5", shown[-1][0])
+        self.assertNotIn("court:all", {payload for row in shown[-1][1] for _, payload in row})
+
+    def test_commerce_run_confirm_does_not_start_court_export(self):
+        b.sessions.clear()
+        b.sessions["42"] = b.Session(
+            step="commerce_confirm",
+            export_kind="commerce",
+            commerce_city="salehard",
+            commerce_sphere="ip",
+            commerce_mode="all",
+            date_from=dt.date(2026, 8, 17),
+            date_to=dt.date(2026, 8, 23),
+        )
+        shown = []
+        with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
+            with mock.patch.object(b, "start_job") as start_job:
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "commerce_run_confirm", "cb1")
+
+        start_job.assert_not_called()
+        self.assertIn("Коммерческий экспортер не настроен", shown[-1])
+
+    def test_old_max_commerce_payload_uses_password_flow(self):
+        b.sessions.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "max:commerce", "cb1")
+
+        self.assertEqual(b.sessions["42"].step, "commerce_password")
+        self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
+
+    def test_old_max_main_payload_requires_commerce_password(self):
+        b.sessions.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "max:main", "cb1")
+
+        self.assertEqual(b.sessions["42"].step, "commerce_password")
+        self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
+
+    def test_commerce_custom_period_goes_to_mode_not_courts(self):
+        b.sessions.clear()
+        b.sessions["42"] = b.Session(step="commerce_period", export_kind="commerce", commerce_city="salehard", commerce_sphere="ip")
+        shown = []
+        with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons, *_args: shown.append(text)):
+            with mock.patch.object(b, "ack_callback"):
+                b.handle({"user_id": 42}, "", "commerce_period_custom", "cb1")
+                b.handle({"user_id": 42}, "17.08.2026")
+                b.handle({"user_id": 42}, "23.08.2026")
+
+        self.assertEqual(b.sessions["42"].step, "commerce_mode")
+        self.assertIn("Шаг 4 из 5", shown[-1])
 
     def test_commerce_inner_buttons_require_password_first(self):
         b.sessions.clear()
@@ -1072,8 +1153,8 @@ class MaxBotTest(unittest.TestCase):
                     b.handle({"user_id": 42}, "", "commerce", "cb1")
                     b.handle({"user_id": 42}, "week")
 
-        self.assertEqual(b.sessions["42"].step, "commerce_menu")
-        self.assertEqual(shown[-1], "Выгрузка коммерции. Выберите действие.")
+        self.assertEqual(b.sessions["42"].step, "commerce_city")
+        self.assertIn("Шаг 1 из 5. Выберите город", shown[-1])
 
 
 if __name__ == "__main__":
