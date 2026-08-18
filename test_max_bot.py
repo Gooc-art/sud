@@ -1,6 +1,7 @@
-import datetime as dt
 import hashlib
 import hmac
+import datetime as dt
+import tempfile
 import unittest
 from unittest import mock
 
@@ -10,8 +11,7 @@ import max_bot as b
 class MaxBotTest(unittest.TestCase):
     def setUp(self):
         b.commerce_password_pending.clear()
-        if hasattr(b, "verified_admin_keys"):
-            b.verified_admin_keys.clear()
+        b.verified_admin_keys.clear()
 
     def test_last_full_week(self):
         self.assertEqual(b.last_full_week(dt.date(2026, 7, 29)), (dt.date(2026, 7, 20), dt.date(2026, 7, 26)))
@@ -76,11 +76,11 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.sessions["42"].step, "running")
 
     def test_extract_callback_target_from_recipient(self):
-        target, text, payload, callback_id, _source_message_id, _contact_phone = b.extract_event(
+        target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
             {
                 "update_type": "message_callback",
                 "callback": {"callback_id": "cb1", "payload": "week", "user": {"user_id": 42}},
-                "message": {"recipient": {"chat_id": 7}, "body": {"text": "old"}},
+                "message": {"recipient": {"chat_id": 7}, "body": {"text": "old", "mid": "msg1"}},
             }
         )
 
@@ -88,14 +88,16 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(text, "old")
         self.assertEqual(payload, "week")
         self.assertEqual(callback_id, "cb1")
+        self.assertEqual(source_message_id, "msg1")
+        self.assertEqual(contact_phone, "")
 
     def test_extract_nested_message_callback(self):
-        target, text, payload, callback_id, _source_message_id, _contact_phone = b.extract_event(
+        target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
             {
                 "update_type": "message_callback",
                 "message_callback": {
                     "callback": {"callback_id": "cb1", "payload": "week", "user": {"user_id": 42}},
-                    "message": {"recipient": {"chat_id": 7}, "body": {"text": "old"}},
+                    "message": {"recipient": {"chat_id": 7}, "body": {"text": "old", "mid": "msg1"}},
                 },
             }
         )
@@ -104,9 +106,11 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(text, "old")
         self.assertEqual(payload, "week")
         self.assertEqual(callback_id, "cb1")
+        self.assertEqual(source_message_id, "msg1")
+        self.assertEqual(contact_phone, "")
 
     def test_extract_callback_prefers_clicking_user_over_bot_sender(self):
-        target, text, payload, callback_id, _source_message_id, _contact_phone = b.extract_event(
+        target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
             {
                 "update_type": "message_callback",
                 "callback": {"callback_id": "cb1", "payload": "week", "user": {"user_id": 42}},
@@ -122,9 +126,11 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(text, "old")
         self.assertEqual(payload, "week")
         self.assertEqual(callback_id, "cb1")
+        self.assertEqual(source_message_id, "")
+        self.assertEqual(contact_phone, "")
 
     def test_extract_bot_started_as_start(self):
-        target, text, payload, callback_id, _source_message_id, _contact_phone = b.extract_event(
+        target, text, payload, callback_id, source_message_id, contact_phone = b.extract_event(
             {"update_type": "bot_started", "chat_id": 7, "user": {"user_id": 42}}
         )
 
@@ -132,6 +138,44 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(text, "/start")
         self.assertEqual(payload, "")
         self.assertEqual(callback_id, "")
+        self.assertEqual(source_message_id, "")
+        self.assertEqual(contact_phone, "")
+
+    def test_callback_deletes_source_menu_and_posts_new_screen(self):
+        b.sessions.clear()
+        b.sessions["42"] = b.Session(menu_message_id="old", date_from=dt.date(2026, 7, 20), date_to=dt.date(2026, 7, 26))
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params))
+            if method == "POST" and path == "/messages":
+                return {"message": {"body": {"mid": "new"}}}
+            return {"success": True}
+
+        with mock.patch.object(b, "request", side_effect=fake_request):
+            with mock.patch.object(b, "ack_callback"):
+                with mock.patch.object(b.time, "sleep"):
+                    b.handle({"user_id": 42}, "", "court:all", "cb1", "old")
+
+        self.assertEqual(calls[0], ("DELETE", "/messages", {"message_id": "old"}))
+        self.assertEqual(calls[1][0:2], ("POST", "/messages"))
+        self.assertEqual(b.sessions["42"].menu_message_id, "new")
+
+    def test_start_posts_new_menu_after_reopening_bot(self):
+        b.sessions.clear()
+        b.sessions["42"] = b.Session(menu_message_id="old")
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params))
+            return {"message": {"body": {"mid": "new"}}}
+
+        with mock.patch.object(b, "request", side_effect=fake_request):
+            with mock.patch.object(b.time, "sleep"):
+                b.handle({"user_id": 42}, "/start")
+
+        self.assertEqual(calls[0][0:2], ("POST", "/messages"))
+        self.assertEqual(b.sessions["42"].menu_message_id, "new")
 
     def test_callback_action_survives_answer_failure(self):
         b.sessions.clear()
@@ -296,6 +340,111 @@ class MaxBotTest(unittest.TestCase):
 
         self.assertEqual(run.call_args.kwargs["timeout"], 123)
 
+    def test_worker_marks_export_with_only_log_errors_as_error(self):
+        class Queue:
+            def __init__(self, job):
+                self.job = job
+
+            def get(self):
+                if self.job:
+                    job, self.job = self.job, None
+                    return job
+                raise KeyboardInterrupt
+
+            def task_done(self):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            outdir = b.Path(tmp)
+            for name in ("report.xlsx", "report.pdf", "report.html", "report.csv"):
+                (outdir / name).write_text("report", encoding="utf-8")
+            (outdir / "run_log.csv").write_text("Суд,Дата,URL,Ошибка,Детали\n" + "x" * 80, encoding="utf-8")
+            job = b.Job("j1", {"user_id": 42}, dt.date(2026, 8, 14), dt.date(2026, 8, 21), None, outdir)
+            uploads = []
+
+            with mock.patch.object(b, "job_queue", Queue(job)):
+                with mock.patch.object(b, "show_menu"):
+                    with mock.patch.object(b, "upload_and_send_file", side_effect=lambda _target, path, caption: uploads.append((path.name, caption))):
+                        with mock.patch.object(b.subprocess, "run", return_value=mock.Mock(returncode=2, stdout="rows=0\n", stderr="")):
+                            with self.assertRaises(KeyboardInterrupt):
+                                b.worker()
+
+        self.assertEqual(job.status, "error")
+        self.assertIn("rows=0", job.error)
+        self.assertNotIn(("report.xlsx", "Excel-отчет"), uploads)
+        self.assertIn(("run_log.csv", "Лог выполнения"), uploads)
+
+    def test_worker_posts_final_menu_after_completion(self):
+        class Queue:
+            def __init__(self, job):
+                self.job = job
+
+            def get(self):
+                if self.job:
+                    job, self.job = self.job, None
+                    return job
+                raise KeyboardInterrupt
+
+            def task_done(self):
+                pass
+
+        b.sessions.clear()
+        b.sessions["42"] = b.Session(menu_message_id="old")
+        job = b.Job("j1", {"user_id": 42}, dt.date(2026, 1, 1), dt.date(2026, 1, 1), None, b.Path("/tmp/no-files"))
+        calls = []
+
+        def fake_request(method, path, params=None, body=None):
+            calls.append((method, path, params))
+            return {"success": True, "message": {"body": {"mid": "new"}}}
+
+        with mock.patch.object(b, "job_queue", Queue(job)):
+            with mock.patch.object(b, "request", side_effect=fake_request):
+                with mock.patch.object(b.time, "sleep"):
+                    with mock.patch.object(b.subprocess, "run", return_value=mock.Mock(returncode=0, stdout="rows=0\n", stderr="")):
+                        with self.assertRaises(KeyboardInterrupt):
+                            b.worker()
+
+        self.assertEqual(calls[0][0], "PUT")
+        self.assertEqual(calls[-1][0:2], ("POST", "/messages"))
+
+    def test_worker_posts_error_menu_after_log(self):
+        class Queue:
+            def __init__(self, job):
+                self.job = job
+
+            def get(self):
+                if self.job:
+                    job, self.job = self.job, None
+                    return job
+                raise KeyboardInterrupt
+
+            def task_done(self):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            outdir = b.Path(tmp)
+            (outdir / "run_log.csv").write_text("log", encoding="utf-8")
+            b.sessions.clear()
+            b.sessions["42"] = b.Session(menu_message_id="old")
+            job = b.Job("j1", {"user_id": 42}, dt.date(2026, 1, 1), dt.date(2026, 1, 1), None, outdir)
+            calls = []
+
+            def fake_request(method, path, params=None, body=None):
+                calls.append((method, path, params))
+                if path == "/uploads":
+                    return {"url": "https://upload.test"}
+                return {"message": {"body": {"mid": "new"}}}
+
+            with mock.patch.object(b, "job_queue", Queue(job)):
+                with mock.patch.object(b, "request", side_effect=fake_request):
+                    with mock.patch.object(b.time, "sleep"):
+                        with mock.patch.object(b, "multipart_upload", return_value={"token": "file"}):
+                            with mock.patch.object(b.subprocess, "run", return_value=mock.Mock(returncode=1, stdout="", stderr="boom")):
+                                with self.assertRaises(KeyboardInterrupt):
+                                    b.worker()
+
+        self.assertEqual(calls[-1][0:2], ("POST", "/messages"))
+
     def test_worker_uses_configured_http_timeout(self):
         class Queue:
             def __init__(self, job):
@@ -334,7 +483,7 @@ class MaxBotTest(unittest.TestCase):
             finally:
                 b.Path("/tmp/sud-weekly-chat-test").unlink(missing_ok=True)
 
-    def test_non_admin_gets_no_access(self):
+    def test_non_admin_gets_auth_request(self):
         with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
             with mock.patch.object(b, "send_auth_request") as send_auth_request:
                 with mock.patch.object(b, "show_menu") as show_menu:
@@ -345,37 +494,7 @@ class MaxBotTest(unittest.TestCase):
         show_menu.assert_not_called()
         ack.assert_called_once_with("cb1")
 
-    def test_chat_only_start_requests_contact(self):
-        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
-            with mock.patch.object(b, "send_auth_request") as send_auth_request:
-                with mock.patch.object(b, "ack_callback"):
-                    b.handle({"chat_id": 7}, "/start")
-
-        send_auth_request.assert_called_once_with({"chat_id": 7})
-
-    def test_denied_chat_stale_callback_does_not_open_export(self):
-        b.sessions.clear()
-        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
-            with mock.patch.object(b, "send_auth_request") as send_auth_request:
-                with mock.patch.object(b, "show_menu") as show_menu:
-                    with mock.patch.object(b, "ack_callback"):
-                        b.handle({"chat_id": 7}, "/start")
-                        b.handle({"chat_id": 7}, "", "week", "cb2")
-
-        self.assertEqual(send_auth_request.call_count, 2)
-        show_menu.assert_not_called()
-        self.assertNotIn("7", b.sessions)
-
-    def test_non_admin_callback_deletes_source_menu(self):
-        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
-            with mock.patch.object(b, "delete_message") as delete_message:
-                with mock.patch.object(b, "send_auth_request"):
-                    with mock.patch.object(b, "ack_callback"):
-                        b.handle({"user_id": 1}, "", "week", "cb1", "old")
-
-        delete_message.assert_called_once_with("old")
-
-    def test_contact_phone_authorizes_admin(self):
+    def test_contact_phone_authorizes_admin_and_notifies(self):
         vcf_info = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=cell:+7 932 058-81-50\r\nFN:Admin\r\nEND:VCARD\r\n"
         contact_hash = hmac.new(b.TOKEN.encode(), vcf_info.encode(), hashlib.sha256).hexdigest()
 
@@ -397,11 +516,30 @@ class MaxBotTest(unittest.TestCase):
                     }
                 )
                 with mock.patch.object(b, "show_menu") as show_menu:
-                    with mock.patch.object(b, "ack_callback"):
-                        b.handle(target, text, payload, callback_id, source_message_id, contact_phone)
+                    with mock.patch.object(b, "send_text") as send_text:
+                        with mock.patch.object(b, "ack_callback"):
+                            b.handle(target, text, payload, callback_id, source_message_id, contact_phone)
 
+        self.assertEqual(contact_phone, "79320588150")
         self.assertIn("1", b.verified_admin_keys)
         show_menu.assert_called_once()
+        send_text.assert_called_once()
+        self.assertEqual(send_text.call_args.args[0], {"user_id": 6393482})
+
+    def test_verified_contact_can_open_menu_next_time(self):
+        with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
+            with mock.patch.object(b, "ADMIN_PHONES", {"79320588150"}):
+                with mock.patch.object(b, "notify_admins_about_contact"):
+                    with mock.patch.object(b, "show_menu"):
+                        with mock.patch.object(b, "ack_callback"):
+                            b.handle({"user_id": 1}, "", contact_phone="79320588150")
+            with mock.patch.object(b, "show_menu") as show_menu:
+                with mock.patch.object(b, "send_auth_request") as send_auth_request:
+                    with mock.patch.object(b, "ack_callback"):
+                        b.handle({"user_id": 1}, "/start")
+
+        show_menu.assert_called_once()
+        send_auth_request.assert_not_called()
 
     def test_admin_can_open_menu(self):
         with mock.patch.object(b, "ADMIN_USER_IDS", {6393482}):
@@ -437,6 +575,7 @@ class MaxBotTest(unittest.TestCase):
 
     def test_commerce_password_blocks_stale_period_buttons(self):
         b.sessions.clear()
+        b.commerce_password_pending.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
             with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
@@ -447,8 +586,23 @@ class MaxBotTest(unittest.TestCase):
         self.assertEqual(b.sessions["42"].step, "commerce_password")
         self.assertEqual(shown[-1], "Введите пароль для выгрузки по коммерции.")
 
+    def test_commerce_password_blocks_text_period_commands(self):
+        b.sessions.clear()
+        b.commerce_password_pending.clear()
+        shown = []
+        with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
+            with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):
+                with mock.patch.object(b, "ack_callback"):
+                    b.handle({"user_id": 42}, "", "commerce", "cb1")
+                    for command in ("/period", "/month", "/week"):
+                        b.handle({"user_id": 42}, command)
+
+        self.assertEqual(b.sessions["42"].step, "commerce_password")
+        self.assertEqual(shown[-3:], ["Введите пароль для выгрузки по коммерции."] * 3)
+
     def test_commerce_password_survives_callback_target_shape_drift(self):
         b.sessions.clear()
+        b.commerce_password_pending.clear()
         shown = []
         with mock.patch.object(b, "COMMERCE_PASSWORD", "secret"):
             with mock.patch.object(b, "show_menu", side_effect=lambda _target, text, _buttons: shown.append(text)):

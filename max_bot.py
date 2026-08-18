@@ -133,7 +133,7 @@ def keyboard(rows: list[list[tuple[str, str]]]) -> dict:
 def contact_keyboard() -> dict:
     return {
         "type": "inline_keyboard",
-        "payload": {"buttons": [[{"type": "request_contact", "text": "Поделиться контактом"}]]},
+        "payload": {"buttons": [[{"type": "request_contact", "text": "Поделиться номером"}]]},
     }
 
 
@@ -157,8 +157,12 @@ def send_text(target: dict, text: str, buttons: list[list[tuple[str, str]]] | No
 
 
 def send_auth_request(target: dict) -> None:
-    body = {"text": "Нет доступа. Поделитесь контактом для входа.", "attachments": [contact_keyboard()]}
-    request("POST", "/messages", target_params(target), body)
+    request(
+        "POST",
+        "/messages",
+        target_params(target),
+        {"text": "Нет доступа. Поделитесь номером для входа.", "attachments": [contact_keyboard()]},
+    )
     time.sleep(0.55)
 
 
@@ -287,7 +291,8 @@ def is_admin(target: dict) -> bool:
 
 
 def verified_contact_phone(message: dict) -> str:
-    for attachment in message.get("attachments") or (message.get("body") or {}).get("attachments") or []:
+    attachments = message.get("attachments") or (message.get("body") or {}).get("attachments") or []
+    for attachment in attachments:
         if attachment.get("type") != "contact":
             continue
         payload = attachment.get("payload") or {}
@@ -302,6 +307,20 @@ def verified_contact_phone(message: dict) -> str:
         match = re.search(r"TEL[^:]*:([+0-9 ()-]+)", normalized_vcf)
         return normalize_phone(match.group(1)) if match else ""
     return ""
+
+
+def notify_admins_about_contact(target: dict, phone: str, granted: bool) -> None:
+    if not phone:
+        return
+    status = "доступ подтвержден" if granted else "номер не в списке доступа"
+    user_id = target.get("user_id") or "-"
+    chat_id = target.get("chat_id") or "-"
+    text = f"MAX бот: пользователь поделился номером {phone}; {status}. user_id={user_id}, chat_id={chat_id}"
+    for admin_id in ADMIN_USER_IDS:
+        try:
+            send_text({"user_id": admin_id}, text)
+        except Exception as exc:
+            print(f"admin contact notify error: {exc}", file=sys.stderr)
 
 
 def rows_count(csv_path: Path) -> int:
@@ -390,14 +409,16 @@ def worker() -> None:
             log = job.outdir / "run_log.csv"
             if log.exists() and log.stat().st_size > 64:
                 upload_and_send_file(job.target, log, "Лог выполнения")
+            sessions.setdefault(session_key(job.target), Session()).menu_message_id = None
             show_menu(job.target, "Можно запускать новую выгрузку.", main_buttons())
         except Exception as exc:
             job.status = "error"
             job.error = str(exc)
-            show_menu(job.target, f"Выгрузка не завершилась: {job.error[:1000]}", [[("Статус выгрузки", "status")], [("Главное меню", "main")]])
             log = job.outdir / "run_log.csv"
             if log.exists():
                 upload_and_send_file(job.target, log, "Лог выполнения")
+            sessions.setdefault(session_key(job.target), Session()).menu_message_id = None
+            show_menu(job.target, f"Выгрузка не завершилась: {job.error[:1000]}", [[("Статус выгрузки", "status")], [("Главное меню", "main")]])
         finally:
             job_queue.task_done()
 
@@ -434,14 +455,15 @@ def extract_event(update: dict) -> tuple[dict, str, str, str, str, str]:
 def handle(target: dict, text: str, payload: str = "", callback_id: str = "", source_message_id: str = "", contact_phone: str = "") -> None:
     if not target.get("user_id") and not target.get("chat_id"):
         return
-    if callback_id and source_message_id:
-        try:
-            delete_message(source_message_id)
-        except Exception as exc:
-            print(f"delete callback source error: {exc}", file=sys.stderr)
-    if contact_phone and normalize_phone(contact_phone) in ADMIN_PHONES:
-        verified_admin_keys.update(target_keys(target))
-        show_menu(target, "Доступ подтвержден.", main_buttons())
+    if contact_phone:
+        granted = normalize_phone(contact_phone) in ADMIN_PHONES
+        notify_admins_about_contact(target, normalize_phone(contact_phone), granted)
+        if granted:
+            verified_admin_keys.update(target_keys(target))
+            show_menu(target, "Доступ подтвержден.", main_buttons())
+            ack_callback(callback_id)
+            return
+        send_auth_request(target)
         ack_callback(callback_id)
         return
     if not is_admin(target):
@@ -450,13 +472,21 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
         return
     key = session_key(target)
     sess = sessions.setdefault(key, Session())
-    if source_message_id and sess.menu_message_id == source_message_id:
-        sess.menu_message_id = None
     action = payload or text
     commerce_key = user_key(target)
     commerce_keys = target_keys(target)
+    if callback_id and source_message_id:
+        try:
+            delete_message(source_message_id)
+        except Exception as exc:
+            print(f"delete callback source error: {exc}", file=sys.stderr)
+        if sess.menu_message_id == source_message_id:
+            sess.menu_message_id = None
 
-    if commerce_keys & commerce_password_pending and payload and action not in {"main", "cancel", "commerce"}:
+    if commerce_keys & commerce_password_pending and (
+        (payload and action not in {"main", "cancel", "commerce"})
+        or action in {"/period", "/month", "/week"}
+    ):
         show_menu(target, "Введите пароль для выгрузки по коммерции.", [nav_buttons()])
         ack_callback(callback_id)
         return
@@ -464,6 +494,8 @@ def handle(target: dict, text: str, payload: str = "", callback_id: str = "", so
     if action in {"/start", "start", "Старт", "main"}:
         commerce_password_pending.difference_update(commerce_keys)
         sess.step = ""
+        if not callback_id:
+            sess.menu_message_id = None
         show_menu(target, "Бот делает выгрузку судебных дел ЯНАО в Excel/PDF/CSV.", main_buttons())
     elif action in {"/month", "month"}:
         sess.date_from, sess.date_to = last_full_month()
