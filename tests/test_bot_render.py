@@ -36,6 +36,8 @@ class BotRenderTests(unittest.TestCase):
 
         self.assertIn("Шаг 1 из 5", text)
         self.assertIn("Текущий выбор:", text)
+        self.assertIn("Доступно городов: 2", text)
+        self.assertIn("Салехард, Новый Уренгой", text)
         self.assertEqual(markup["inline_keyboard"][0][0]["callback_data"], "wiz:v1:city:салехард")
 
     def test_default_max_catalog_contains_restored_cities_and_spheres(self) -> None:
@@ -74,6 +76,8 @@ class BotRenderTests(unittest.TestCase):
 
         self.assertIn("Каталог сгруппирован по темам", text)
         self.assertIn("Красота и уход", text)
+        self.assertIn("Всего сфер: 2", text)
+        self.assertIn("маникюр, ремонт", text)
         self.assertEqual(markup["inline_keyboard"][0][0]["text"], "Все сферы деятельности")
 
     def test_render_select_service_shows_selected_category_services(self) -> None:
