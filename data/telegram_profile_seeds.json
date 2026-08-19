@@ -1,0 +1,93 @@
+{
+  "entries": [
+    {
+      "city": "Салехард",
+      "service": "общепит",
+      "service_aliases": [
+        "еда",
+        "домашняя еда",
+        "восточная еда"
+      ],
+      "urls": [
+        "https://t.me/edasalechard",
+        "https://t.me/warim1994"
+      ]
+    },
+    {
+      "city": "Салехард",
+      "service": "доставка еды",
+      "service_aliases": [
+        "еда на заказ",
+        "еда на вынос",
+        "домашняя еда",
+        "восточная еда"
+      ],
+      "urls": [
+        "https://t.me/edasalechard",
+        "https://t.me/warim1994",
+        "https://t.me/gulkairka"
+      ]
+    },
+    {
+      "city": "Салехард",
+      "service": "пекарня",
+      "service_aliases": [
+        "выпечка",
+        "торты",
+        "пироги"
+      ],
+      "urls": [
+        "https://t.me/edasalechard"
+      ]
+    },
+    {
+      "city": "Салехард",
+      "service": "маникюр",
+      "service_aliases": [],
+      "urls": [
+        "https://t.me/glazapolzettt",
+        "https://t.me/natapetk",
+        "https://t.me/glazapolzett"
+      ]
+    },
+    {
+      "city": "Салехард",
+      "service": "салон красоты",
+      "service_aliases": [],
+      "urls": [
+        "https://t.me/natapetk",
+        "https://t.me/kalistenika_dlya_uma",
+        "https://t.me/nadezhda_avramchuk_beauty",
+        "https://t.me/pashkevichangelina_shd",
+        "https://t.me/perfume_ezhakova",
+        "https://t.me/обдорского",
+        "https://t.me/lemoss_salekhard"
+      ]
+    },
+    {
+      "city": "Салехард",
+      "service": "Красот",
+      "service_aliases": [],
+      "urls": [
+        "https://t.me/teatrkukol_zhuzha89",
+        "https://t.me/loramoshkina"
+      ]
+    },
+    {
+      "city": "Салехард",
+      "service": "Забегаев",
+      "service_aliases": [],
+      "urls": [
+        "https://t.me/gyflorium"
+      ]
+    },
+    {
+      "city": "Салехард",
+      "service": "барбершоп",
+      "service_aliases": [],
+      "urls": [
+        "https://t.me/dayanabolam"
+      ]
+    }
+  ]
+}

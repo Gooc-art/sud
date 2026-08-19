@@ -3,6 +3,7 @@ __pycache__/
 output/
 venv/
 *.log
+*.egg-info/
 .env
 .env.*
 !.env.max.example

@@ -11,8 +11,9 @@ Last updated: 2026-08-18
 
 ## Bot
 
-- Bot entrypoint: `max_bot.py`
-- Run command: `python3 max_bot.py --poll`
+- Bot entrypoint: `src/godmod/max_bot.py`
+- Compatibility wrapper: `max_bot.py`
+- Run command: `PYTHONPATH=src python3 -m godmod.max_bot --dotenv ~/.config/sud/max-bot.env`
 - Production systemd user service: `sud-max-bot.service`
 - Service install script: `scripts/install_max_bot_service.sh`
 - State file on production: `$HOME/.config/sud/max-bot-state.json`
@@ -42,30 +43,33 @@ Last updated: 2026-08-18
 
 ## Current Menu Contract
 
-- Top menu must only show:
-  - `🏛 Выгрузка суды`
-  - `💼 Выгрузка коммерции`
-- Court export is inside `🏛 Выгрузка суды`.
-- Commerce export is password-protected and then opens a 5-step wizard:
+- Top menu must show:
+  - `🏢 Выгрузка по коммерции`
+  - `⚖️ Выгрузка по судам`
+  - `ℹ️ Помощь`
+- Court export is inside `⚖️ Выгрузка по судам`.
+- Commerce export opens the restored Godmod wizard:
   1. city
-  2. sphere
+  2. service/category
   3. period
   4. mode
   5. confirmation
 - Legacy commerce payloads `max:commerce` and `max:main` are mapped into the new commerce flow.
 
-## Known Limitation
+## Commercial Export
 
-- This repo currently has no real commercial exporter.
-- `sud_export.py` is the real court exporter.
-- The commerce wizard must not launch `sud_export.py` as if it were commercial export.
-- Until a real commercial export command/script is added, `commerce_run_confirm` must stop with: `Коммерческий экспортер не настроен. Судовая выгрузка не запущена.`
+- Commercial export is restored from `Gooc-art/godmod` under `src/godmod`.
+- The MAX production service is MAX-only; do not start a separate Telegram bot service.
+- Telegram MTProto may still be used as a data source when `TELEGRAM_*` env is configured.
+- Keep exactly one MAX long polling process for one MAX token.
 
 ## Verification Commands
 
-- Unit tests: `python3 -m unittest`
+- Unit tests: `PYTHONPATH=src python3 -m pytest -q`
 - Fast court export smoke test:
-  `python3 sud_export.py --from 2026-08-17 --to 2026-08-17 --court salehardsky--ynao.sudrf.ru --max-cases 1 --timeout 20 --outdir /tmp/sud-export-smoke`
+  `PYTHONPATH=src python3 sud_export.py --from 2026-08-17 --to 2026-08-17 --court salehardsky--ynao.sudrf.ru --timeout 20 --outdir /tmp/sud-export-smoke`
+- Fast commerce smoke test:
+  `GODMOD_USE_MOCK_DATA=true PYTHONPATH=src python3 -m godmod.cli sample --cities "Салехард" --services "общепит" --period-days 30 --top-n 5 --platforms vk --output /tmp/sud-commerce-smoke/report.xlsx`
 - Production deploy status:
   `gh run list --workflow max-bot.yml --limit 1`
 - Production debug status:

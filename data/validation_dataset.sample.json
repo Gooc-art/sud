@@ -1,0 +1,36 @@
+[
+  {
+    "name": "mock_vk_manicure_salehard",
+    "cities": ["Салехард"],
+    "services": ["маникюр"],
+    "period_days": 60,
+    "platforms": ["vk"],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [
+      "https://vk.com/маникюр-салехард",
+      "https://vk.com/маникюр-салехард-studio"
+    ],
+    "expected_irrelevant_urls": [
+      "https://vk.com/маникюр-салехард-studio-blog"
+    ],
+    "notes": "MockCollector должен оставить активный и средний аккаунт и отсечь личный блог."
+  },
+  {
+    "name": "mock_vk_repair_salehard",
+    "cities": ["Салехард"],
+    "services": ["ремонт"],
+    "period_days": 60,
+    "platforms": ["vk"],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [
+      "https://vk.com/ремонт-салехард",
+      "https://vk.com/ремонт-салехард-studio"
+    ],
+    "expected_irrelevant_urls": [
+      "https://vk.com/ремонт-салехард-studio-blog"
+    ],
+    "notes": "Второй mock-case для сверки recall по другой услуге."
+  }
+]

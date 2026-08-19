@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "godmod"
+version = "0.1.0"
+description = "MVP аналитики коммерческих аккаунтов услуг по городам ЯНАО"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Codex" }]
+dependencies = [
+    "telethon>=1.42,<2",
+]
+
+[project.scripts]
+godmod = "godmod.cli:main"
+godmod-max-bot = "godmod.max_bot:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

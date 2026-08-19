@@ -1,0 +1,2 @@
+"""Godmod MVP package."""
+

@@ -117,7 +117,7 @@ actions.runner.Gooc-art-sud.BOTSGSN-sud.service
 
 ```bash
 cd ~/sud-app
-MAX_TOKEN=token_from_max python3 max_bot.py --poll
+MAX_TOKEN=token_from_max PYTHONPATH=src python3 -m godmod.max_bot --dotenv ~/.config/sud/max-bot.env
 ```
 
 Установка user-service:
@@ -143,11 +143,13 @@ systemctl --user restart sud-max-bot.service
 
 Команды бота:
 
-- `/start` — главное меню.
-- `/month` — выгрузка за прошлый полный месяц.
-- `/week` — выгрузка за прошлую полную неделю.
-- `/period` — выбор периода.
-- `/status` — статус последней задачи.
+- `🏢 Выгрузка по коммерции` — города ЯНАО, услуги, период, режим, Excel/PDF.
+- `⚖️ Выгрузка по судам` — судебная выгрузка ЯНАО.
+- `/start` — главное меню MAX.
+
+Коммерческая выгрузка живёт в пакете `src/godmod` и использует доступные
+источники `VK`, `Telegram MTProto`, `Google Places`, `2GIS`. Telegram-бот как
+отдельный production service не запускается.
 - `/weekly_here` — сохранить текущий групповой чат для еженедельных уведомлений ФНС.
 - `/cancel` — отмена ввода.
 

@@ -1,0 +1,2267 @@
+[
+  {
+    "name": "bootstrap_салехард_маникюр",
+    "cities": [
+      "Салехард"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [
+      "https://vk.com/loft_shd",
+      "https://vk.com/nika.zapishi",
+      "https://vk.com/cherrystudio_89",
+      "https://vk.com/manicure_shd",
+      "https://vk.com/schastie_studio_shd",
+      "https://vk.com/club211565119",
+      "https://vk.com/be_gorgeous_nails",
+      "https://vk.com/lilu_lash_i_nail",
+      "https://vk.com/manikshd",
+      "https://vk.com/nogturnshd",
+      "https://vk.com/groomlovee",
+      "https://vk.com/manicurestudioshd",
+      "https://vk.com/profbar_shd",
+      "https://vk.com/club223312205",
+      "https://vk.com/manicur_ksd",
+      "https://vk.com/nail_room_av",
+      "https://vk.com/club216956390",
+      "https://vk.com/anastasia_yadne_nails",
+      "https://vk.com/club212436153",
+      "https://vk.com/beauty__buffet"
+    ],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_салехард_ремонт",
+    "cities": [
+      "Салехард"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_салехард_фотограф",
+    "cities": [
+      "Салехард"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_салехард_автоэлектрик",
+    "cities": [
+      "Салехард"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_салехард_массаж",
+    "cities": [
+      "Салехард"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_салехард_косметолог",
+    "cities": [
+      "Салехард"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_салехард_репетитор",
+    "cities": [
+      "Салехард"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_салехард_грузоперевозки",
+    "cities": [
+      "Салехард"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_новый_уренгой_маникюр",
+    "cities": [
+      "Новый Уренгой"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [
+      "https://vk.com/salon_tvoy"
+    ],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_новый_уренгой_ремонт",
+    "cities": [
+      "Новый Уренгой"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_новый_уренгой_фотограф",
+    "cities": [
+      "Новый Уренгой"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_новый_уренгой_автоэлектрик",
+    "cities": [
+      "Новый Уренгой"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_новый_уренгой_массаж",
+    "cities": [
+      "Новый Уренгой"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [
+      "https://vk.com/salon_tvoy"
+    ],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_новый_уренгой_косметолог",
+    "cities": [
+      "Новый Уренгой"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_новый_уренгой_репетитор",
+    "cities": [
+      "Новый Уренгой"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_новый_уренгой_грузоперевозки",
+    "cities": [
+      "Новый Уренгой"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_ноябрьск_маникюр",
+    "cities": [
+      "Ноябрьск"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_ноябрьск_ремонт",
+    "cities": [
+      "Ноябрьск"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_ноябрьск_фотограф",
+    "cities": [
+      "Ноябрьск"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_ноябрьск_автоэлектрик",
+    "cities": [
+      "Ноябрьск"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_ноябрьск_массаж",
+    "cities": [
+      "Ноябрьск"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_ноябрьск_косметолог",
+    "cities": [
+      "Ноябрьск"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_ноябрьск_репетитор",
+    "cities": [
+      "Ноябрьск"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_ноябрьск_грузоперевозки",
+    "cities": [
+      "Ноябрьск"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_надым_маникюр",
+    "cities": [
+      "Надым"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_надым_ремонт",
+    "cities": [
+      "Надым"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_надым_фотограф",
+    "cities": [
+      "Надым"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_надым_автоэлектрик",
+    "cities": [
+      "Надым"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_надым_массаж",
+    "cities": [
+      "Надым"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_надым_косметолог",
+    "cities": [
+      "Надым"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_надым_репетитор",
+    "cities": [
+      "Надым"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_надым_грузоперевозки",
+    "cities": [
+      "Надым"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_муравленко_маникюр",
+    "cities": [
+      "Муравленко"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_муравленко_ремонт",
+    "cities": [
+      "Муравленко"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_муравленко_фотограф",
+    "cities": [
+      "Муравленко"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_муравленко_автоэлектрик",
+    "cities": [
+      "Муравленко"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_муравленко_массаж",
+    "cities": [
+      "Муравленко"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_муравленко_косметолог",
+    "cities": [
+      "Муравленко"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_муравленко_репетитор",
+    "cities": [
+      "Муравленко"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_муравленко_грузоперевозки",
+    "cities": [
+      "Муравленко"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_губкинский_маникюр",
+    "cities": [
+      "Губкинский"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_губкинский_ремонт",
+    "cities": [
+      "Губкинский"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_губкинский_фотограф",
+    "cities": [
+      "Губкинский"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_губкинский_автоэлектрик",
+    "cities": [
+      "Губкинский"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_губкинский_массаж",
+    "cities": [
+      "Губкинский"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_губкинский_косметолог",
+    "cities": [
+      "Губкинский"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_губкинский_репетитор",
+    "cities": [
+      "Губкинский"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_губкинский_грузоперевозки",
+    "cities": [
+      "Губкинский"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_лабытнанги_маникюр",
+    "cities": [
+      "Лабытнанги"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_лабытнанги_ремонт",
+    "cities": [
+      "Лабытнанги"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_лабытнанги_фотограф",
+    "cities": [
+      "Лабытнанги"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_лабытнанги_автоэлектрик",
+    "cities": [
+      "Лабытнанги"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_лабытнанги_массаж",
+    "cities": [
+      "Лабытнанги"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_лабытнанги_косметолог",
+    "cities": [
+      "Лабытнанги"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_лабытнанги_репетитор",
+    "cities": [
+      "Лабытнанги"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_лабытнанги_грузоперевозки",
+    "cities": [
+      "Лабытнанги"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тарко_сале_маникюр",
+    "cities": [
+      "Тарко-Сале"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тарко_сале_ремонт",
+    "cities": [
+      "Тарко-Сале"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тарко_сале_фотограф",
+    "cities": [
+      "Тарко-Сале"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тарко_сале_автоэлектрик",
+    "cities": [
+      "Тарко-Сале"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тарко_сале_массаж",
+    "cities": [
+      "Тарко-Сале"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тарко_сале_косметолог",
+    "cities": [
+      "Тарко-Сале"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тарко_сале_репетитор",
+    "cities": [
+      "Тарко-Сале"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тарко_сале_грузоперевозки",
+    "cities": [
+      "Тарко-Сале"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тазовский_маникюр",
+    "cities": [
+      "Тазовский"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тазовский_ремонт",
+    "cities": [
+      "Тазовский"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тазовский_фотограф",
+    "cities": [
+      "Тазовский"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тазовский_автоэлектрик",
+    "cities": [
+      "Тазовский"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тазовский_массаж",
+    "cities": [
+      "Тазовский"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тазовский_косметолог",
+    "cities": [
+      "Тазовский"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тазовский_репетитор",
+    "cities": [
+      "Тазовский"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_тазовский_грузоперевозки",
+    "cities": [
+      "Тазовский"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_яр_сале_маникюр",
+    "cities": [
+      "Яр-Сале"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_яр_сале_ремонт",
+    "cities": [
+      "Яр-Сале"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_яр_сале_фотограф",
+    "cities": [
+      "Яр-Сале"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_яр_сале_автоэлектрик",
+    "cities": [
+      "Яр-Сале"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_яр_сале_массаж",
+    "cities": [
+      "Яр-Сале"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_яр_сале_косметолог",
+    "cities": [
+      "Яр-Сале"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_яр_сале_репетитор",
+    "cities": [
+      "Яр-Сале"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_яр_сале_грузоперевозки",
+    "cities": [
+      "Яр-Сале"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_аксарка_маникюр",
+    "cities": [
+      "Аксарка"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_аксарка_ремонт",
+    "cities": [
+      "Аксарка"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_аксарка_фотограф",
+    "cities": [
+      "Аксарка"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_аксарка_автоэлектрик",
+    "cities": [
+      "Аксарка"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_аксарка_массаж",
+    "cities": [
+      "Аксарка"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_аксарка_косметолог",
+    "cities": [
+      "Аксарка"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_аксарка_репетитор",
+    "cities": [
+      "Аксарка"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_аксарка_грузоперевозки",
+    "cities": [
+      "Аксарка"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_харп_маникюр",
+    "cities": [
+      "Харп"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_харп_ремонт",
+    "cities": [
+      "Харп"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_харп_фотограф",
+    "cities": [
+      "Харп"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_харп_автоэлектрик",
+    "cities": [
+      "Харп"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_харп_массаж",
+    "cities": [
+      "Харп"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_харп_косметолог",
+    "cities": [
+      "Харп"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_харп_репетитор",
+    "cities": [
+      "Харп"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_харп_грузоперевозки",
+    "cities": [
+      "Харп"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_мужи_маникюр",
+    "cities": [
+      "Мужи"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_мужи_ремонт",
+    "cities": [
+      "Мужи"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_мужи_фотограф",
+    "cities": [
+      "Мужи"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_мужи_автоэлектрик",
+    "cities": [
+      "Мужи"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_мужи_массаж",
+    "cities": [
+      "Мужи"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_мужи_косметолог",
+    "cities": [
+      "Мужи"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_мужи_репетитор",
+    "cities": [
+      "Мужи"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_мужи_грузоперевозки",
+    "cities": [
+      "Мужи"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_красноселькуп_маникюр",
+    "cities": [
+      "Красноселькуп"
+    ],
+    "services": [
+      "маникюр"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_красноселькуп_ремонт",
+    "cities": [
+      "Красноселькуп"
+    ],
+    "services": [
+      "ремонт"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_красноселькуп_фотограф",
+    "cities": [
+      "Красноселькуп"
+    ],
+    "services": [
+      "фотограф"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_красноселькуп_автоэлектрик",
+    "cities": [
+      "Красноселькуп"
+    ],
+    "services": [
+      "автоэлектрик"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_красноселькуп_массаж",
+    "cities": [
+      "Красноселькуп"
+    ],
+    "services": [
+      "массаж"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_красноселькуп_косметолог",
+    "cities": [
+      "Красноселькуп"
+    ],
+    "services": [
+      "косметолог"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_красноселькуп_репетитор",
+    "cities": [
+      "Красноселькуп"
+    ],
+    "services": [
+      "репетитор"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  },
+  {
+    "name": "bootstrap_красноселькуп_грузоперевозки",
+    "cities": [
+      "Красноселькуп"
+    ],
+    "services": [
+      "грузоперевозки"
+    ],
+    "period_days": 60,
+    "platforms": [
+      "vk"
+    ],
+    "top_n": 20,
+    "report_mode": "all",
+    "expected_relevant_urls": [],
+    "expected_irrelevant_urls": [],
+    "candidate_urls": [],
+    "raw_candidate_urls": [],
+    "notes": "bootstrap from vk seeds/matrix"
+  }
+]

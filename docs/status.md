@@ -129,7 +129,8 @@ output/cache/cases/
 
 ## MAX-бот
 
-Файл: `max_bot.py`.
+Файл: `src/godmod/max_bot.py`; корневой `max_bot.py` оставлен как wrapper для
+старых команд.
 
 Токена MAX пока нет. Когда появится, он хранится вне репозитория:
 
@@ -141,9 +142,12 @@ output/cache/cases/
 
 ```env
 MAX_TOKEN=
+MAX_BOT_TOKEN=
 MAX_API_BASE=https://platform-api2.max.ru
 SUD_MAX_DAYS=31
 SUD_ADMIN_USER_IDS=6393482
+GODMOD_ACCESS_ADMIN_USER_IDS=6393482
+GODMOD_USE_MOCK_DATA=false
 ```
 
 Установка user-service:
