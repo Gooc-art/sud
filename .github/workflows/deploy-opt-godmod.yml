@@ -1,0 +1,13 @@
+name: deploy-opt-godmod
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to /opt/godmod
+        run: |
+          scripts/deploy_to_opt_godmod.sh "$GITHUB_WORKSPACE"
