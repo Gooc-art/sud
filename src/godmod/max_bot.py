@@ -96,7 +96,7 @@ def main() -> None:
         raise SystemExit("MAX_BOT_TOKEN is not set. Put it into .env or environment.")
 
     acquire_long_poll_lock(settings)
-    client = MaxBotClient(settings.max_bot_token, base_url=os.environ.get("MAX_API_BASE", "https://platform-api.max.ru"))
+    client = MaxBotClient(settings.max_bot_token, base_url=settings.max_api_base)
     try:
         client.clear_commands()
     except MaxApiError as exc:

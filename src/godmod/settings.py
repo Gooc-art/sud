@@ -24,6 +24,7 @@ class AppSettings:
     runtime: RuntimeConfig
     use_mock_data: bool
     max_bot_token: str | None = None
+    max_api_base: str = "https://platform-api.max.ru"
     max_allowed_chat_ids: list[str] = field(default_factory=list)
     vk_full_recall: bool = False
     yandex_maps_api_key: str | None = None
@@ -149,6 +150,7 @@ class AppSettings:
                 rule_config=rule_config,
             ),
             use_mock_data=use_mock_data,
+            max_api_base=(first("MAX_API_BASE", default="https://platform-api.max.ru") or "https://platform-api.max.ru").strip(),
             vk_full_recall=vk_full_recall,
             yandex_maps_api_key=(get("YANDEX_MAPS_API_KEY") or "").strip() or None,
             twogis_api_key=(get("TWOGIS_API_KEY") or "").strip() or None,

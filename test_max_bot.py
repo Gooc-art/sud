@@ -37,6 +37,7 @@ class MaxBotCompatibilityTests(unittest.TestCase):
             settings = AppSettings.from_env("/tmp/missing-sud-env")
 
         self.assertEqual(settings.max_bot_token, "old-token")
+        self.assertEqual(settings.max_api_base, "https://platform-api.max.ru")
         self.assertEqual(settings.access_admin_user_ids, ["42"])
         self.assertFalse(settings.use_mock_data)
 

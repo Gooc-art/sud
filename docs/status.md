@@ -143,7 +143,7 @@ output/cache/cases/
 ```env
 MAX_TOKEN=
 MAX_BOT_TOKEN=
-MAX_API_BASE=https://platform-api2.max.ru
+MAX_API_BASE=https://platform-api.max.ru
 SUD_MAX_DAYS=31
 SUD_ADMIN_USER_IDS=6393482
 GODMOD_ACCESS_ADMIN_USER_IDS=6393482

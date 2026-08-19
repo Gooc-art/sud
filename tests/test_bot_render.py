@@ -38,6 +38,35 @@ class BotRenderTests(unittest.TestCase):
         self.assertIn("Текущий выбор:", text)
         self.assertEqual(markup["inline_keyboard"][0][0]["callback_data"], "wiz:v1:city:салехард")
 
+    def test_default_max_catalog_contains_restored_cities_and_spheres(self) -> None:
+        settings = AppSettings(
+            telegram_bot_token="bot-token",
+            telegram_allowed_chat_ids=[],
+            telegram_api_id=None,
+            telegram_api_hash=None,
+            telegram_user_session=None,
+            vk_api_token=None,
+            vk_service_token="vk-service",
+            vk_community_token=None,
+            vk_profile_seeds_path=None,
+            google_places_api_key=None,
+            runtime=RuntimeConfig(output_dir=Path("output")),
+            use_mock_data=False,
+        )
+
+        _, city_markup = render_wizard(WizardState(chat_id=1, user_id=2, top_n=20), settings)
+        city_buttons = [button["text"] for row in city_markup["inline_keyboard"] for button in row]
+        self.assertIn("Тарко-Сале", city_buttons)
+        self.assertIn("Красноселькуп", city_buttons)
+
+        _, service_markup = render_wizard(
+            WizardState(chat_id=1, user_id=2, step="select_service", city="Салехард", top_n=20),
+            settings,
+        )
+        service_buttons = [button["text"] for row in service_markup["inline_keyboard"] for button in row]
+        self.assertIn("Красота и уход", service_buttons)
+        self.assertIn("Общепит", service_buttons)
+
     def test_render_select_service_mentions_sections_and_keeps_all_services_button(self) -> None:
         state = WizardState(chat_id=1, user_id=2, step="select_service", city="Салехард", top_n=20)
 

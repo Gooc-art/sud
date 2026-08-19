@@ -10,7 +10,7 @@ if [ ! -f "$env_file" ]; then
   cat > "$env_file" <<'EOF'
 MAX_TOKEN=
 MAX_BOT_TOKEN=
-MAX_API_BASE=https://platform-api2.max.ru
+MAX_API_BASE=https://platform-api.max.ru
 SUD_MAX_DAYS=45
 SUD_EXPORT_TIMEOUT_SECONDS=14400
 SUD_HTTP_TIMEOUT_SECONDS=20
@@ -72,3 +72,7 @@ pkill -f '[m]ax_bot.py --poll' || true
 pkill -f '[g]odmod.max_bot' || true
 systemctl --user restart sud-max-bot.service
 systemctl --user status sud-max-bot.service --no-pager || true
+
+if systemctl is-active --quiet godmod-max-bot.service 2>/dev/null; then
+  printf '%s\n' 'WARNING: system godmod-max-bot.service is still active. Run as root: systemctl disable --now godmod-max-bot.service'
+fi
