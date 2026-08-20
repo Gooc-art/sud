@@ -45,7 +45,7 @@ jobs:
 
       - name: Sync to /opt/godmod
         run: |
-          systemctl stop "${DEPLOY_SERVICE}" || true
+          sudo -n systemctl stop "${DEPLOY_SERVICE}" || true
           rsync -a --delete \
             --exclude ".git/" \
             --exclude ".github/" \
@@ -113,10 +113,10 @@ jobs:
         run: |
           python3 -m venv "${DEPLOY_DIR}/.venv"
           "${DEPLOY_DIR}/.venv/bin/python" -m pip install -e "${DEPLOY_DIR}"
-          systemctl daemon-reload
-          systemctl enable "${DEPLOY_SERVICE}"
-          systemctl restart "${DEPLOY_SERVICE}"
-          systemctl status "${DEPLOY_SERVICE}" --no-pager
+          sudo -n systemctl daemon-reload
+          sudo -n systemctl enable "${DEPLOY_SERVICE}"
+          sudo -n systemctl restart "${DEPLOY_SERVICE}"
+          sudo -n systemctl status "${DEPLOY_SERVICE}" --no-pager
 
       - name: Send fresh MAX home screen
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.send_screen == 'true' }}
