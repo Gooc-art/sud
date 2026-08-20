@@ -46,6 +46,7 @@ class AppSettings:
     max_api_health_timeout_seconds: int = 10
     bot_access_code: str | None = None
     access_admin_user_ids: list[str] = field(default_factory=list)
+    commerce_access_code: str | None = None
 
     @classmethod
     def from_env(cls, dotenv_path: str | Path = ".env") -> "AppSettings":
@@ -121,7 +122,8 @@ class AppSettings:
         mac_daily_report_timezone = (get("GODMOD_MAC_DAILY_REPORT_TIMEZONE", "Asia/Yekaterinburg") or "Asia/Yekaterinburg").strip()
         max_api_health_timeout_seconds = int(get("GODMOD_MAX_API_HEALTH_TIMEOUT_SECONDS", "10") or "10")
         bot_access_code = (get("GODMOD_BOT_ACCESS_CODE") or "").strip() or None
-        access_admin_user_ids = _parse_text_ids(first("GODMOD_ACCESS_ADMIN_USER_IDS", "SUD_ADMIN_USER_IDS", default="23325864"))
+        commerce_access_code = (first("GODMOD_COMMERCE_ACCESS_CODE", "SUD_COMMERCE_ACCESS_CODE") or "").strip() or None
+        access_admin_user_ids = _parse_text_ids(first("GODMOD_ACCESS_ADMIN_USER_IDS", "SUD_ADMIN_USER_IDS", default="6393482"))
 
         return cls(
             telegram_bot_token=(get("TELEGRAM_BOT_TOKEN") or "").strip() or None,
@@ -171,6 +173,7 @@ class AppSettings:
             max_api_health_timeout_seconds=max(1, max_api_health_timeout_seconds),
             bot_access_code=bot_access_code,
             access_admin_user_ids=access_admin_user_ids,
+            commerce_access_code=commerce_access_code,
         )
 
     @property

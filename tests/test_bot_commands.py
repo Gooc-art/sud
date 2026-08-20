@@ -132,7 +132,7 @@ class SettingsTests(unittest.TestCase):
                 "GODMOD_MAC_DAILY_REPORT_TIMEZONE=Asia/Yekaterinburg",
                 "GODMOD_MAX_API_HEALTH_TIMEOUT_SECONDS=6",
                 "GODMOD_BOT_ACCESS_CODE=secret-pass",
-                "GODMOD_ACCESS_ADMIN_USER_IDS=23325864",
+                "GODMOD_ACCESS_ADMIN_USER_IDS=6393482",
             ]
         )
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -179,7 +179,7 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(settings.mac_daily_report_timezone, "Asia/Yekaterinburg")
             self.assertEqual(settings.max_api_health_timeout_seconds, 6)
             self.assertEqual(settings.bot_access_code, "secret-pass")
-            self.assertEqual(settings.access_admin_user_ids, ["23325864"])
+            self.assertEqual(settings.access_admin_user_ids, ["6393482"])
 
     def test_load_settings_reads_cache_overrides(self) -> None:
         content = "\n".join(
@@ -204,6 +204,14 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.runtime.vk_owner_cache_ttl_hours, 12)
         self.assertEqual(settings.runtime.vk_city_cache_ttl_hours, 240)
         self.assertEqual(settings.runtime.twogis_search_cache_ttl_hours, 8)
+
+    def test_load_settings_defaults_access_admin_to_current_admin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            dotenv = Path(temp_dir) / ".env"
+            dotenv.write_text("MAX_BOT_TOKEN=max-token\n", encoding="utf-8")
+            settings = AppSettings.from_env(dotenv)
+
+        self.assertEqual(settings.access_admin_user_ids, ["6393482"])
 
 
 if __name__ == "__main__":

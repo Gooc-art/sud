@@ -29,4 +29,4 @@ jobs:
               print(json.dumps(json.loads(path.read_text()), ensure_ascii=False, sort_keys=True))
           PY
           echo "== journal debug =="
-          journalctl --user -u sud-max-bot.service -n 300 --no-pager | grep -E 'DEBUG-user-23325864|update error|poll error|another max_bot|delete .*screen|callback source|Started sud-max-bot|Main PID' || true
+          journalctl --user -u sud-max-bot.service -n 300 --no-pager | grep -E 'DEBUG-user-(6393482|23325864)|update error|poll error|another max_bot|delete .*screen|callback source|Started sud-max-bot|Main PID' || true

@@ -1,23 +1,141 @@
-name: deploy
+name: Deploy Godmod MAX Bot Linux
 
 on:
+  workflow_dispatch:
+    inputs:
+      send_screen:
+        description: "Send fresh MAX home screen after deploy"
+        required: false
+        default: "false"
+      chat_id:
+        description: "MAX chat id without chat: prefix"
+        required: false
+        default: "266940284"
+      user_id:
+        description: "MAX user id"
+        required: false
+        default: "6393482"
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-godmod-linux-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, X64, godmod-prod]
+    env:
+      DEPLOY_DIR: /opt/godmod
+      DEPLOY_SERVICE: godmod-max-bot.service
+      MAX_TOKEN_OVERRIDE: ${{ secrets.SUD_MERGED_MAX_TOKEN }}
+      COMMERCE_ACCESS_CODE: ${{ secrets.GODMOD_COMMERCE_ACCESS_CODE }}
+      ACCESS_ADMIN_USER_IDS: "6393482"
+      SUD_ADMIN_PHONES: "79320588150"
+
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy locally
+
+      - name: Run tests
         run: |
-          if [ ! -d "$HOME/sud-app/.git" ]; then
-            git clone https://github.com/Gooc-art/sud.git "$HOME/sud-app"
-          fi
-          git -C "$HOME/sud-app" fetch origin main
-          git -C "$HOME/sud-app" reset --hard origin/main
-          chmod +x "$HOME/sud-app/sud_export.py"
-          chmod +x "$HOME/sud-app/weekly_fns_notify.py"
-          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
-          "$HOME/sud-app/scripts/install_weekly_fns_timer.sh"
+          python3 -m venv .venv
+          .venv/bin/python -m pip install -e .
+          .venv/bin/python -m pip install pytest
+          PYTHONPATH=src .venv/bin/python -m pytest -q
+
+      - name: Sync to /opt/godmod
+        run: |
+          systemctl stop "${DEPLOY_SERVICE}" || true
+          rsync -a --delete \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude ".tmp/" \
+            --exclude "output/" \
+            --exclude "venv/" \
+            --exclude ".venv/" \
+            --exclude ".env" \
+            --exclude "__pycache__/" \
+            --exclude ".pytest_cache/" \
+            --exclude "*.egg-info/" \
+            ./ "${DEPLOY_DIR}/"
+
+      - name: Patch MAX secrets
+        run: |
+          umask 077
+          touch "${DEPLOY_DIR}/.env"
+          tmp="$(mktemp)"
+          awk '
+            BEGIN { has_max = 0; has_bot = 0; has_commerce = 0; has_access_admin = 0; has_sud_admin = 0; has_admin_phones = 0 }
+            /^MAX_TOKEN=/ {
+              if (ENVIRON["MAX_TOKEN_OVERRIDE"] != "") print "MAX_TOKEN=" ENVIRON["MAX_TOKEN_OVERRIDE"]; else print
+              has_max = 1
+              next
+            }
+            /^MAX_BOT_TOKEN=/ {
+              if (ENVIRON["MAX_TOKEN_OVERRIDE"] != "") print "MAX_BOT_TOKEN=" ENVIRON["MAX_TOKEN_OVERRIDE"]; else print
+              has_bot = 1
+              next
+            }
+            /^GODMOD_COMMERCE_ACCESS_CODE=/ {
+              if (ENVIRON["COMMERCE_ACCESS_CODE"] != "") print "GODMOD_COMMERCE_ACCESS_CODE=" ENVIRON["COMMERCE_ACCESS_CODE"]; else print
+              has_commerce = 1
+              next
+            }
+            /^GODMOD_ACCESS_ADMIN_USER_IDS=/ {
+              print "GODMOD_ACCESS_ADMIN_USER_IDS=" ENVIRON["ACCESS_ADMIN_USER_IDS"]
+              has_access_admin = 1
+              next
+            }
+            /^SUD_ADMIN_USER_IDS=/ {
+              print "SUD_ADMIN_USER_IDS=" ENVIRON["ACCESS_ADMIN_USER_IDS"]
+              has_sud_admin = 1
+              next
+            }
+            /^SUD_ADMIN_PHONES=/ {
+              print "SUD_ADMIN_PHONES=" ENVIRON["SUD_ADMIN_PHONES"]
+              has_admin_phones = 1
+              next
+            }
+            { print }
+            END {
+              if (ENVIRON["MAX_TOKEN_OVERRIDE"] != "" && !has_max) print "MAX_TOKEN=" ENVIRON["MAX_TOKEN_OVERRIDE"]
+              if (ENVIRON["MAX_TOKEN_OVERRIDE"] != "" && !has_bot) print "MAX_BOT_TOKEN=" ENVIRON["MAX_TOKEN_OVERRIDE"]
+              if (ENVIRON["COMMERCE_ACCESS_CODE"] != "" && !has_commerce) print "GODMOD_COMMERCE_ACCESS_CODE=" ENVIRON["COMMERCE_ACCESS_CODE"]
+              if (!has_access_admin) print "GODMOD_ACCESS_ADMIN_USER_IDS=" ENVIRON["ACCESS_ADMIN_USER_IDS"]
+              if (!has_sud_admin) print "SUD_ADMIN_USER_IDS=" ENVIRON["ACCESS_ADMIN_USER_IDS"]
+              if (!has_admin_phones) print "SUD_ADMIN_PHONES=" ENVIRON["SUD_ADMIN_PHONES"]
+            }
+          ' "${DEPLOY_DIR}/.env" > "${tmp}"
+          install -m 600 "${tmp}" "${DEPLOY_DIR}/.env"
+          rm -f "${tmp}"
+
+      - name: Install and restart
+        run: |
+          python3 -m venv "${DEPLOY_DIR}/.venv"
+          "${DEPLOY_DIR}/.venv/bin/python" -m pip install -e "${DEPLOY_DIR}"
+          systemctl daemon-reload
+          systemctl enable "${DEPLOY_SERVICE}"
+          systemctl restart "${DEPLOY_SERVICE}"
+          systemctl status "${DEPLOY_SERVICE}" --no-pager
+
+      - name: Send fresh MAX home screen
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.send_screen == 'true' }}
+        env:
+          CHAT_ID: ${{ inputs.chat_id }}
+          USER_ID: ${{ inputs.user_id }}
+        run: |
+          PYTHONPATH="${DEPLOY_DIR}/src" "${DEPLOY_DIR}/.venv/bin/python" - <<'PY'
+          import os
+          from godmod.max_api import MaxBotClient
+          from godmod.max_bot import _forget_all_max_screens_for_user, _remember_max_screen, _upsert_max_home
+          from godmod.settings import AppSettings
+
+          settings = AppSettings.from_env("/opt/godmod/.env")
+          client = MaxBotClient(settings.max_bot_token, base_url=settings.max_api_base)
+          chat_id = "chat:" + os.environ["CHAT_ID"].removeprefix("chat:")
+          user_id = int(os.environ["USER_ID"])
+          _forget_all_max_screens_for_user(settings, user_id)
+          message_id = _upsert_max_home(client, chat_id)
+          _remember_max_screen(settings, chat_id, user_id, message_id)
+          print("send_result=ok")
+          PY
