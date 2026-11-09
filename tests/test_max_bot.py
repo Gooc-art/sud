@@ -11,10 +11,11 @@ from unittest.mock import Mock, patch
 
 from godmod.access_control import is_authorized_user, request_phone_access
 from godmod.config import RuntimeConfig
-from godmod.bot_state import WIZARD_STATES, ensure_wizard_state
+from godmod.bot_state import WIZARD_STATES, ensure_wizard_state, get_wizard_state
 from godmod.export.reports import ReportArtifacts
 from godmod.max_api import MaxApiError, MaxBotClient
 from godmod.max_bot import (
+    COMMERCE_PASSWORD_PENDING,
     MAX_SCREEN_IDS,
     SUD_JOBS,
     SUD_SESSIONS,
@@ -58,6 +59,7 @@ class MaxBotUpdateTests(unittest.TestCase):
     def setUp(self) -> None:
         MAX_SCREEN_IDS.clear()
         USER_MAX_SCREEN_IDS.clear()
+        COMMERCE_PASSWORD_PENDING.clear()
         WIZARD_STATES.clear()
         SUD_SESSIONS.clear()
         SUD_JOBS.clear()
@@ -67,6 +69,7 @@ class MaxBotUpdateTests(unittest.TestCase):
     def tearDown(self) -> None:
         MAX_SCREEN_IDS.clear()
         USER_MAX_SCREEN_IDS.clear()
+        COMMERCE_PASSWORD_PENDING.clear()
         WIZARD_STATES.clear()
         SUD_SESSIONS.clear()
         SUD_JOBS.clear()
@@ -417,6 +420,126 @@ class MaxBotUpdateTests(unittest.TestCase):
         self.assertNotIn("Выгрузка по судам", labels)
         self.assertIn("📍 Салехард", labels)
         self.assertIn("⬅️ Назад в главное меню", labels)
+
+    def test_commerce_button_requests_password_when_configured(self) -> None:
+        settings = AppSettings(
+            telegram_bot_token=None,
+            telegram_allowed_chat_ids=[],
+            telegram_api_id=None,
+            telegram_api_hash=None,
+            telegram_user_session=None,
+            vk_api_token=None,
+            vk_service_token="vk-service",
+            vk_community_token=None,
+            vk_profile_seeds_path=None,
+            google_places_api_key=None,
+            runtime=RuntimeConfig(output_dir=Path("output"), cities=["Салехард"]),
+            use_mock_data=False,
+            max_bot_token="max-token",
+            commerce_access_code="89320588150",
+        )
+        client = MaxBotClient("max-token")
+        client._request_json = Mock(return_value={"message": {"body": {"mid": "home-1"}}})
+
+        with patch("godmod.max_bot.remember_last_max_target"):
+            handle_max_update(
+                client,
+                settings,
+                {
+                    "update_type": "message_callback",
+                    "callback": {
+                        "callback_id": "cb-commerce",
+                        "payload": "max:commerce",
+                        "user": {"user_id": 123},
+                        "message": {"recipient": {"chat_id": 456}, "body": {"mid": "home-1"}},
+                    },
+                },
+            )
+
+        body = client._request_json.call_args_list[0].kwargs["json_body"]
+        self.assertIn("Введите пароль", body["text"])
+        self.assertIn(("chat:456", 123), COMMERCE_PASSWORD_PENDING)
+
+    def test_wrong_commerce_password_keeps_wizard_closed(self) -> None:
+        settings = AppSettings(
+            telegram_bot_token=None,
+            telegram_allowed_chat_ids=[],
+            telegram_api_id=None,
+            telegram_api_hash=None,
+            telegram_user_session=None,
+            vk_api_token=None,
+            vk_service_token="vk-service",
+            vk_community_token=None,
+            vk_profile_seeds_path=None,
+            google_places_api_key=None,
+            runtime=RuntimeConfig(output_dir=Path("output"), cities=["Салехард"]),
+            use_mock_data=False,
+            max_bot_token="max-token",
+            commerce_access_code="89320588150",
+        )
+        COMMERCE_PASSWORD_PENDING.add(("chat:456", 123))
+        MAX_SCREEN_IDS[("chat:456", 123)] = "home-1"
+        client = MaxBotClient("max-token")
+        client._request_json = Mock(side_effect=[{"success": True}, {"message": {"body": {"mid": "home-1"}}}])
+
+        with patch("godmod.max_bot.remember_last_max_target"):
+            handle_max_update(
+                client,
+                settings,
+                {
+                    "update_type": "message_created",
+                    "message": {
+                        "sender": {"user_id": 123},
+                        "recipient": {"chat_id": 456},
+                        "body": {"mid": "pass-1", "text": "bad"},
+                    },
+                },
+            )
+
+        body = client._request_json.call_args_list[1].kwargs["json_body"]
+        self.assertIn("Неверный пароль", body["text"])
+        self.assertIn(("chat:456", 123), COMMERCE_PASSWORD_PENDING)
+        self.assertIsNone(get_wizard_state("chat:456", 123))
+
+    def test_correct_commerce_password_opens_wizard(self) -> None:
+        settings = AppSettings(
+            telegram_bot_token=None,
+            telegram_allowed_chat_ids=[],
+            telegram_api_id=None,
+            telegram_api_hash=None,
+            telegram_user_session=None,
+            vk_api_token=None,
+            vk_service_token="vk-service",
+            vk_community_token=None,
+            vk_profile_seeds_path=None,
+            google_places_api_key=None,
+            runtime=RuntimeConfig(output_dir=Path("output"), cities=["Салехард"]),
+            use_mock_data=False,
+            max_bot_token="max-token",
+            commerce_access_code="89320588150",
+        )
+        COMMERCE_PASSWORD_PENDING.add(("chat:456", 123))
+        MAX_SCREEN_IDS[("chat:456", 123)] = "home-1"
+        client = MaxBotClient("max-token")
+        client._request_json = Mock(side_effect=[{"success": True}, {"message": {"body": {"mid": "home-1"}}}])
+
+        with patch("godmod.max_bot.remember_last_max_target"):
+            handle_max_update(
+                client,
+                settings,
+                {
+                    "update_type": "message_created",
+                    "message": {
+                        "sender": {"user_id": 123},
+                        "recipient": {"chat_id": 456},
+                        "body": {"mid": "pass-1", "text": "89320588150"},
+                    },
+                },
+            )
+
+        body = client._request_json.call_args_list[1].kwargs["json_body"]
+        self.assertIn("Доступно городов: 1.", body["text"])
+        self.assertNotIn(("chat:456", 123), COMMERCE_PASSWORD_PENDING)
 
     def test_text_commerce_reuses_remembered_max_screen(self) -> None:
         settings = AppSettings(

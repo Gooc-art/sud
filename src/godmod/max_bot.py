@@ -78,6 +78,7 @@ class SudJob:
 
 SUD_SESSIONS: dict[tuple[int | str, int | str], SudSession] = {}
 SUD_JOBS: dict[str, SudJob] = {}
+COMMERCE_PASSWORD_PENDING: set[tuple[int | str, int | str]] = set()
 MAX_SCREEN_IDS: dict[tuple[int | str, int | str], int | str] = {}
 USER_MAX_SCREEN_IDS: dict[int | str, int | str] = {}
 _LOCK_FILE_HANDLE = None
@@ -174,6 +175,9 @@ def handle_max_update(client: MaxBotClient, settings: AppSettings, update: dict[
     if _handle_max_access_update(client, settings, normalized_update):
         _trace_max_update(settings, update, normalized_update, handler="access")
         return
+    if _handle_commerce_password_update(client, settings, normalized_update):
+        _trace_max_update(settings, update, normalized_update, handler="commerce_password")
+        return
     if handle_max_home_update(client, settings, normalized_update):
         _trace_max_update(settings, update, normalized_update, handler="max_home")
         return
@@ -207,6 +211,7 @@ def handle_max_home_update(client: MaxBotClient, settings: AppSettings, update: 
             if known_message_id != message_id:
                 _delete_message_safely(client, chat_id, known_message_id)
         _forget_all_max_screens_for_user(settings, user_id)
+        COMMERCE_PASSWORD_PENDING.discard((chat_id, user_id))
         _remember_max_screen(settings, chat_id, user_id, _upsert_max_home(client, chat_id, message_id=message_id))
         if callback_id:
             client.answer_callback_query(callback_id, text="Принято")
@@ -216,6 +221,11 @@ def handle_max_home_update(client: MaxBotClient, settings: AppSettings, update: 
             client.send_message(chat_id, "Доступ закрыт. Отправьте /access <код>.")
             if callback_id:
                 client.answer_callback_query(callback_id, text="Доступ закрыт.", show_alert=True)
+            return True
+        if _commerce_access_protected(settings):
+            _request_commerce_password(client, settings, chat_id, user_id, message_id=message_id)
+            if callback_id:
+                client.answer_callback_query(callback_id, text="Введите пароль")
             return True
         _clear_flow_screens(client, chat_id, user_id, keep_message_id=message_id)
         open_commerce_wizard(client, settings, chat_id, user_id, wizard_message_id=message_id)
@@ -242,6 +252,68 @@ def handle_max_home_update(client: MaxBotClient, settings: AppSettings, update: 
             client.answer_callback_query(callback_id, text="Принято")
         return True
     return False
+
+
+def _handle_commerce_password_update(client: MaxBotClient, settings: AppSettings, update: dict[str, Any]) -> bool:
+    if not _commerce_access_protected(settings):
+        return False
+    chat_id, user_id = _normalized_ids(update)
+    if chat_id is None or user_id is None or (chat_id, user_id) not in COMMERCE_PASSWORD_PENDING:
+        return False
+    action, callback_id = _max_home_action(update)
+    if callback_id or not action:
+        return False
+    message_id = _remembered_max_screen(settings, chat_id, user_id)
+    incoming_message_id = _max_home_message_id(update)
+    if incoming_message_id is not None:
+        _delete_message_safely(client, chat_id, incoming_message_id)
+    if action.strip() != (settings.commerce_access_code or "").strip():
+        _upsert_commerce_password_prompt(client, chat_id, message_id=message_id, error=True)
+        return True
+    COMMERCE_PASSWORD_PENDING.discard((chat_id, user_id))
+    _clear_flow_screens(client, chat_id, user_id, keep_message_id=message_id)
+    open_commerce_wizard(client, settings, chat_id, user_id, wizard_message_id=message_id)
+    state = get_wizard_state(chat_id, user_id)
+    if state is not None:
+        _remember_max_screen(settings, chat_id, user_id, state.wizard_message_id)
+    return True
+
+
+def _commerce_access_protected(settings: AppSettings) -> bool:
+    return bool((settings.commerce_access_code or "").strip())
+
+
+def _request_commerce_password(
+    client: MaxBotClient,
+    settings: AppSettings,
+    chat_id: int | str,
+    user_id: int | str,
+    *,
+    message_id: int | str | None,
+) -> None:
+    COMMERCE_PASSWORD_PENDING.add((chat_id, user_id))
+    _clear_flow_screens(client, chat_id, user_id, keep_message_id=message_id)
+    _remember_max_screen(settings, chat_id, user_id, _upsert_commerce_password_prompt(client, chat_id, message_id=message_id))
+
+
+def _upsert_commerce_password_prompt(
+    client: MaxBotClient,
+    chat_id: int | str,
+    *,
+    message_id: int | str | None,
+    error: bool = False,
+) -> int | str | None:
+    text = "Неверный пароль. Введите пароль для выгрузки по коммерции." if error else "Введите пароль для выгрузки по коммерции."
+    markup = {"inline_keyboard": [[{"text": "⬅️ Назад в главное меню", "callback_data": "max:main"}]]}
+    if message_id is not None:
+        try:
+            result = client.edit_message_text(chat_id, message_id, text, reply_markup=markup)
+            return _message_id_from_result(result) or message_id
+        except MaxApiError as exc:
+            if "message is not modified" in str(exc):
+                return message_id
+    sent = client.send_message(chat_id, text, reply_markup=markup)
+    return _message_id_from_result(sent)
 
 
 def _max_action_key(action: str) -> str:
